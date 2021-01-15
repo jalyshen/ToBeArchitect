@@ -1,5 +1,0 @@
-# DevOps
-
-
-
-# CI/CD
