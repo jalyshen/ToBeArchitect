@@ -1,6 +1,6 @@
 ### [分布式事务](./Distributed/Distributed_Transaction.md)
 
-### 分布式锁
+### [分布式锁](./Distributed/Distributed_Lock.md)
 
 ### 分布式幂等性
 
@@ -17,3 +17,4 @@
 ### 分布式全局ID
 
 ### 分布式限流
+
