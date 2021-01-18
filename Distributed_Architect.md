@@ -2,7 +2,7 @@
 
 ### [分布式锁](./Distributed/Distributed_Lock.md)
 
-### 分布式幂等性
+### [分布式幂等性](./Distributed/Distributed_Idempotence.md)
 
 ### 分布式缓存
 
