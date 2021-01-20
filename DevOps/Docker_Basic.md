@@ -84,21 +84,129 @@ FROM <image>
 FROM <image>:<tag>
 ```
 
-Dockerfile的**第一条指令必须**为FROM指令 ，并且，如果在同一个Dockerfile中创建多个镜像时，可以使用多个FROM指令。
+作用：Dockerfile的**第一条指令必须**为FROM指令 ，并且，如果在同一个Dockerfile中创建多个镜像时，可以使用多个FROM指令。
 
 #### MAINTAINER
 
+格式：
+
+```shell
+MAINTAINER <name>
+```
+
+作用：指定维护者信息。
+
+注意：MAINTAINER指令已经被抛弃，建议使用LABEL。
+
 #### LABEL
+
+格式：
+
+```shell
+LABEL <key>=<value> <key>=<value> <key>=<value> ...
+```
+
+作用：为镜像添加标签。一个LABEL就是一个键值对。
+
+举例如下：
+
+```shell
+LABEL "com.example.vendor"="ACME Incorporated"
+LABEL com.example.label-with-value="foo"
+LABEL version="1.0"
+LABEL description="This text illustrates \that label-values can span multiple lines."
+```
+
+可以给镜像添加多个LABEL。需要注意的是，每条LABEL指令都会生成一个新的层。最好是把添加的多个LABEL合并为一条指令：
+
+```shell
+LABEL multi.label1="value1" multi.label2="value2" other="value3"
+```
+
+也可以分行写：
+
+```shell
+LABEL multi.label1="value1" \
+      multi.label2="value2" \
+      other="value3"
+```
+
+如果新添加的LABEL和已有的LABEL同名，则新值会覆盖旧值。
+
+可以使用docker inspect命令查看镜像的LABEL信息。
 
 #### RUN
 
+格式：
+
+```shell
+RUN <command>
+```
+
+或者：
+
+```shell
+RUN ["executable", "param1", param2"]
+```
+
+第一种将在shell终端中运行，即/bin/sh -c， 第二种则使用**exec**执行。指定使用其他终端可以通过第二种方式实现，例如：RUN ["bin/bash", "-c", "echo hello"]
+
+每条RUN指令将在当前镜像的基础上执行指定命令，并提交为新的镜像。当命令较长时可以使用 \ 来换行。
+
 #### CMD
+
+支持三种格式：
+
+```shell
+CMD [“executable”, “param1”, “param2”] ：使用 exec 执行，推荐方式。
+
+CMD command param1 param2              ：在 /bin/sh 中执行，提供给需要交互的应用。
+
+CMD [“param1”, “param2”]               ：提供给 ENTRYPOINT 的默认参数。
+```
+
+指定启动容器时实行的命令，每个Dockerfile只能有一条CMD命令。如果指定了多条CMD命令，只有最后一条会被执行。
+
+如果用户在启动容器时制定了要运行的命令，则会覆盖掉CMD指定的命令。
 
 #### EXPOSE
 
+格式：
+
+```shell
+EXPOSE <port> [<port>…]
+```
+
+例如：EXPOSE 22 80 8443
+
+这个命令告诉Docker服务，容器需要暴露的端口号，供互联系统使用。在启动容器时需要通过 **-P** 参数让Docker主机分配一个端口转发指定的端口。使用 -P 参数则可以具体指定主机上哪个端口映射过来。
+
 #### ENV
 
+格式：
+
+```shell
+ENV <key> <value>
+```
+
+用来指定一个环境变量，这个变量提供给后续的RUN指令使用，并在容器运行时保持。例如：
+
+```shell
+ENV PG_MAJOR 9.3
+ENV PG_VERSION 9.3.4
+RUN curl -SL http://example.com/postgres-$PG_VERSION.tar.xz | tar -xJC /usr/src/postgress && …
+ENV PATH /usr/local/postgres-$PG_MAJOR/bin:$PATH
+```
+
 #### ADD
+
+格式：
+
+```shell
+ADD <src> <dest>
+```
+
+该指令将复制指定的<src>到容器中的<dest>。<src>可以是Dockerfile所在目录的一个相对路径
 
 #### COPY
 

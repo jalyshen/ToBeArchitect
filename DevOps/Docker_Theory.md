@@ -76,22 +76,47 @@ Docker镜像使用了写时复制（Copy-on-Write）的策略，在多个容器�
 
 ### registry
 
+每个Docker容器都要依赖Docker镜像。那么，当第一次使用docker run命令启动一个容器时，是从哪儿获取所需要的镜像呢？答案是：如果是第一次基于某个镜像启动容器，且宿主机上不存在所需的镜像，docker就会从registry中下载该镜像并保存到宿主主机。如果宿主机上存在了该镜像，则直接使用宿主机上的镜像完成容器的启动。
 
+那什么是registry呢？
+
+registry用来保存docker镜像，其中还包括镜像层次结构和关于镜像的元数据。可以将registry简单的想象成类似于Git仓库之类的实体。
+
+用户可以在自己的数据中心搭建私有的registry，也可以使用docker官方的功用registry服务，即[Docker Hub](https://hub.docker.com)。它是由Docker公司维护的一个公共镜像库。Docker Hub中有两类仓库：用户仓库（user repository）和顶层仓库（top-level repository）。用户仓库由普通的Docker Hub用户创建，顶层仓库由Docker公司负责维护，提供官方版本镜像。理论上，顶层仓库中的镜像经过Docker公司验证，应该是架构良好并且安全的。
 
 ### repository
 
+顾名思义，就是存放Docker镜像的仓库，在解释**registry**时已经提到了。官方的解释是：repository由具有某个功能的Docker镜像的所有迭代版本构成的镜像组。registry由一系列经过命名的repository组成，repository通过命名规范对用户仓库和顶层仓库进行组织。所谓的顶层仓库，其名称只包含仓库名，例如：
 
+![](./images/Docker_top_repository_name.png)
+
+而用户仓库则是如下的标识：
+
+![](./images/Docker_user_repository_name.png)
+
+用户仓库的名称多了“**用户名/**”部分。
+
+通常，大家经常把**mysql**视为镜像名称，其实**mysql**是**repository**的名称。repository是一个镜像的集合，包含了多个不同版本的镜像，这些镜像之间使用**标签**进行版本区分，例如mysql:8.0.22等，它们都属于mysql这个repository。
 
 ### manifest
 
+manifest主要存在于registry中作为Docker镜像的元数据文件，在pull、push、save、和load过程中作为镜像结构和基础信息的描述文件。在镜像被pull或者load到docker宿主机时，manifest被转化为本地的镜像配置文件config。在pull一个镜像时会显示一个摘要（Digest）信息：
 
+![](./images/Docker_pull_digest.png)
+
+这个digest信息就是对镜像的manifest内容计算sha256 sum得到的。
 
 ### image & layer
 
+ Docker内部的image概念时用来存储一组镜像相关的元数据信息，主要包括镜像的架构（如amd64）、镜像默认配置信息、构建镜像的容器配置信息、包含所有镜像层信息的rootfs。Docker利用rootfs中的diff_id计算出内容寻址的索引（chainID）来获取layer相关信息，进而获取每一个镜像层的文件内容。
 
+layer是Docker用来管理镜像层的一个中间概念。之前提到，镜像由镜像层组成，而单个镜像层可能被多个镜像共享，所以Docker将layer与image的概念分离。
+
+layer主要存放了镜像层的diff_id、size、cache-id和parent等内容，实际的文件内容则是由存储驱动来管理，并可以通过cache-id在本地索引到。
 
 ### Dockerfile
 
 Dockerfile是通过docker build命令构建docker镜像时用到的配置文件。
 
 它允许用户使用基本的DSL语法来定义docker镜像，其中的每一条指令描述一个构建镜像的步骤。想了解更多关于Dockerfile的信息，请参考[《Docker基础：Dockerfile》](./Docker_Basic.md)
+
