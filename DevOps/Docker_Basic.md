@@ -2,7 +2,13 @@
 
 https://www.cnblogs.com/sparkdev/p/6357614.html
 
+内容来自：
 
+作者：[sparkdev](http://www.cnblogs.com/sparkdev/)
+
+出处：http://www.cnblogs.com/sparkdev/
+
+=====
 
 Dockerfile是一个文本格式的配置文件，用户可以使用Dockerfile快速创建自定义的镜像。
 

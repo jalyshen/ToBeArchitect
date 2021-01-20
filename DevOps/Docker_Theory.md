@@ -2,6 +2,12 @@
 
 https://www.cnblogs.com/sparkdev/p/9092082.html
 
+内容来自：
+
+作者：[sparkdev](http://www.cnblogs.com/sparkdev/)
+
+出处：http://www.cnblogs.com/sparkdev/
+
 ## 什么是Docker镜像
 
 Docker镜像是一个**只读**的Docker**容器模版**，含有启动Docker容器所需要的文件系统结构及其内容，因此是启动一个Docker容器的基础。
