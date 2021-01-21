@@ -212,9 +212,17 @@ ENV PATH /usr/local/postgres-$PG_MAJOR/bin:$PATH
 ADD <src> <dest>
 ```
 
-该指令将复制指定的<src>到容器中的<dest>。<src>可以是Dockerfile所在目录的一个相对路径
+该指令将复制指定的<src>到容器中的<dest>。<src>可以是Dockerfile所在目录的一个相对路径(文件或者目录)，也可以是一个URL；还可以是一个tar文件（自动解压为目录）。
 
 #### COPY
+
+格式：
+
+```shell
+COPY <src> <dest>
+```
+
+复制本地主机的<src>（为Dockerfile所在目录的相对路径，文件或目录）为容器中的<dest>。目标路径不存在时，会自动创建。当使用本地目录为源目录时，推荐使用COPY。
 
 #### ENTRYPOINT
 
