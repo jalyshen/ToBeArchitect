@@ -226,12 +226,110 @@ COPY <src> <dest>
 
 #### ENTRYPOINT
 
+格式：
+
+```shell
+ENTRYPOINT [“executable”, “param1”, “param2”]
+
+ENTRYPOINT command param1 param2 (shell 中执行)
+```
+
+配置容器启动后执行的命令，并且**不可**被docker run提供的参数覆盖。
+
+每个dockerfile中只能有一个ENTRYPOINT，当指定多个ENTRYPOINT时，只有最后一个生效。
+
 #### VOLUME
+
+格式：
+
+```shell
+VOLUME ["/data"]
+```
+
+可以使用VOLUME指令添加多个数据卷：
+
+```shell
+VOLUME ["/data1", "/data2"]
+```
+
+创建一个可以从本地或者其他容器挂载的挂载点，一般用来存放数据库和需要保持的数据等。
 
 #### USER
 
+格式：
+
+```shell
+USER daemon
+```
+
+指定运行容器时的用户名或者UID，后续的RUN也会使用指定用户。当服务不需要管理员权限时，可以通过该命令指定运行用户，并且可以在之前创建所需要的用户。
+
+例如：RUN groupadd -人postgres && useradd -r -g postgres postgres
+
 #### WORKDIR
+
+格式：
+
+```shell
+WORKDIR /path/to/workdir
+```
+
+为后续的RUN、CMD、ENTRYPOINT指令配置工作目录。可以使用多个WORKDIR指令，后续命令如果参数是相对路径，则会给予之前命令指定的路径。例如：
+
+```shell
+WORKDIR /a
+WORKDIR b
+WORKDIR c
+RUN pwd
+```
+
+则最终路径是： /a/b/c
 
 #### ONBUILD
 
+格式：
+
+```shell
+ONBUILD [INSTRUCTION]
+```
+
+配置当所创建的镜像作为其他新创建镜像的基础镜像时，所执行的操作指令。例如：Dockerfile使用如下的内容创建了镜像image-A:
+
+```shell
+…
+ONBUILD ADD . /app/src
+ONBUILD RUN /usr/local/bin/python-build –dir /app/src
+…
+```
+
+如果基于image-A创建新的镜像时，新的Dockerfile中使用FROM image-A指定基础镜像时，会自动执行ONBUILD指令内容，等价于在后面添加了两条指令。
+
+```shell
+FROM image-A
+#automatically run the following
+ADD . /app/src
+RUN /usr/local/bin/python-build –dir /app/src
+```
+
 ## 创建镜像
+
+编写完成Dockerfile之后，可以通过docker build命令来创建镜像。
+
+基本的格式为：
+
+```shell
+docker build [optional]路径
+```
+
+该命令将读取指定路径下（包括子目录）的Dockerfile，并将该路径下所有内容发送给docke服务端，由服务端来创建镜像。因此一般建议放置Dockerfile的目录为空目录。
+
+另外，可以通过.dockerignore文件来让docker忽略路径下的目录和文件。要指定镜像的标签信息，可以通过 -t 选项来实现。
+
+例如：指定Dockerfile所在路径为 /tmp/docker_builder/，并且希望生成镜像标签为 build_repo/first_image, 可以使用如下命令：
+
+```shell
+$ sudo docker build -t build_repo/first_image /tmp/docker_builder/
+# 如果不想使用上次 build 过程中产生的 cache 可以添加 --no-cache 选项
+$ sudo docker build --no-cache -t build_repo/first_image /tmp/docker_builder
+```
+
