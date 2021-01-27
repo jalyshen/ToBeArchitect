@@ -1,13 +1,7 @@
-# DevOps
+## DevOps
 
-
-
-# CI/CD
-
-
+## CI/CD
 
 ## [Docker](./Docker.md)
-
-
 
 ## Kubernetes
