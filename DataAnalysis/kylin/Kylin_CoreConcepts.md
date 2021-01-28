@@ -122,16 +122,60 @@ as sellers from kylin_sales group by part_dt, lstg_site_id
 
 
 
-## Cube、Cuboid和Cube Segment
+## 基本概念
+
+#### Table
+
+定义在Hive中，是Data cube（数据立方体）的数据源，在build cube之前，Hive表**必须**同步在Kylin中。
+
+#### Model
+
+用来定义一个Fact Table（事实表）和多个Lookup Table（查找表），及所包含的dimension（维度）列，Messures（度量）列、partition（分区）列和Data（日期）格式
 
 ### Cube
 
 Cube（或者叫做 Data Cube），即数据立方体，是一种常用语数据分析与索引的技术，它可以对原始数据建立多维索引，大大加快数据的查询效率。
 
+它定义了使用的模型、模型中的表的维度（Dimensions）、度量（messures）、如何对段分区（segments partitions）、合并段（segments auto-merge）等的规则。
+
 ### Cubiod
 
-Cuboid特指Apache Kylin中的某一种维度组合下所计算的数据。
+Cuboid特指Apache Kylin中的某一种维度组合下**所计算的数据**。
 
 ### Cube Segment
 
-Cube Segment指针对源数据中的某一片段计算出来的Cube数据。通常，数据仓库中的数据数量会随着时间的增长而增长，而Cube Segment也是按时间顺序构建的。
+Cube Segment指针对源数据中的某一片段计算出来的**Cube数据**。通常，数据仓库中的数据数量会随着时间的增长而增长，而**Cube Segment也是按时间顺序构建**的。
+
+它是立方体构建（build）后的数据载体，一个Segment映射HBase中的一张表。Cube实例构建后，会产生一个新的Segment。一旦某个已经构建的Cube的原始数据发生变化，只需要刷新（fresh）变化的时间段所关联的Segment即可。
+
+#### Dimension
+
+维度可以简单理解为观察数据的角度，一般是一组离散的值
+
+#### Cardinality
+
+**维度的基数**。指的是该维度在数据集中出现的不同值的个数。比如“城市”是一个维度，如果该维度下有2000个不同的值，那么该维度的基数就是2000.通常一个维度的基数会从几十到几万个不等，个别维度如id的基数会超过百万甚至千万。
+
+基数超过一百万的维度通常被称为超高基数维度（Ultra High Cardinality, UHC），需要引起设计者的注意。
+
+> Cube中所有维度的基数都可以体现出Cube的复杂度，如果一个Cube中有好几个超高基数维度，那么这个Cube膨胀的概率就会很高。在创建Cube前需要对所有维度的基数做一个了解，这样有助于设计合理的Cube。
+>
+> 计算基数有多种途径，最简单的方法就是让Hive执行一个count distinct的SQL查询。Lylin也提供了计算基数的方法，Kylin对基数的计算方法采取的是HyperLogLog（应该是BitMap，或者说Bloom FIlter过滤器的方式）的近似算法，与精确值略有误差，但作为参考值已经足够了。
+
+#### Messures
+
+度量就是被聚合的统计值，也是聚合运算的结果，一般指聚合函数（如：sum、count、average等）。比如学生成绩、销售额等。
+
+度量主要用于分析或者评估，比如对趋势的判断，对业绩或者效果的平定等等。
+
+#### Fact table
+
+事实表是指包含了大量不冗余数据的表，其列一般有两种，分别为包含事实数据的列，包含维度foreign key的列。
+
+#### Lookup table
+
+包含了对事实表的某些列扩充说明的字段。
+
+#### Dimenssion Table
+
+维表，有Fact Table和Lookup table抽象出来的表，包含了多个相关的列，以提供对数据不同维度的观察，其中每列的值的数据为Cardinality(基数)。
