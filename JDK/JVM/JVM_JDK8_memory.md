@@ -54,7 +54,7 @@ JDK8的内存模型的变化：
 
 ##### MetaspaceSize
 
-**初始Metaspace大小。**此参数用于设置初始化的metaspace大小，控制元空间发生GC的阈值。GC后，动态增加或降低Metaspace Size。在默认的情况下，这个值大小根据不同的平台在12M到20M浮动。使用 
+**初始Metaspace大小** 。此参数用于设置初始化的metaspace大小，控制元空间发生GC的阈值。GC后，动态增加或降低Metaspace Size。在默认的情况下，这个值大小根据不同的平台在12M到20M浮动。使用 
 
 ```shell
 java -XX:+PrintFlagsInitial
@@ -64,17 +64,17 @@ java -XX:+PrintFlagsInitial
 
 ##### MaxMetaspaceSize
 
-**最大Metaspace大小。**此参数用于设置Metaspace增长的上限，防止因为某些情况导致Metaspace无限地使用本地内存，影响到其他程序。默认的值为4294967295B（大约4096MB）。
+**最大Metaspace大小** 。 此参数用于设置Metaspace增长的上限，防止因为某些情况导致Metaspace无限地使用本地内存，影响到其他程序。默认的值为4294967295B（大约4096MB）。
 
 ##### MinMetaspaceFreeRatio
 
-**最小空闲比。**当进行过**Metaspace GC后**，会计算当前Metaspace的**空闲空间比**。如果空闲比**小于(<)**这个参数值（即实际非空闲占比过大，内存不够用），那么JVM将增长Metaspace大小。**默认值是40，即40%。**
+**最小空闲比** 。 当进行过**Metaspace GC后**，会计算当前Metaspace的**空闲空间比**。如果空闲比**小于(<)**这个参数值（即实际非空闲占比过大，内存不够用），那么JVM将增长Metaspace大小。**默认值是40，即40%。**
 
 设置该参数可以控制Metaspace的增长速度，太小的值会导致Metaspace增长缓慢，Metaspace的使用逐渐趋于饱和，可能会影响之后类的加载。而太大又会导致Metaspace增长过快，浪费内存。
 
 ##### MaxMetaspaceFreeRatio
 
-**最大空闲比，**同MixMetaspaceFreeRatio作用类似。GC之后计算了空闲比，如果比值**大于(>)**这个参数值，那么JMV将会释放Metaspace的部分空间。**默认值是70，即70%。**
+**最大空闲比** ，同MixMetaspaceFreeRatio作用类似。GC之后计算了空闲比，如果比值**大于(>)**这个参数值，那么JMV将会释放Metaspace的部分空间。**默认值是70，即70%。**
 
 ##### MaxMetaspaceExpansion
 
