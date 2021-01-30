@@ -68,18 +68,18 @@ java -XX:+PrintFlagsInitial
 
 ##### MinMetaspaceFreeRatio
 
-**最小空闲比** 。 当进行过**Metaspace GC后**，会计算当前Metaspace的**空闲空间比**。如果空闲比**小于(<)**这个参数值（即实际非空闲占比过大，内存不够用），那么JVM将增长Metaspace大小。**默认值是40，即40%。**
+**最小空闲比** 。 当进行过**Metaspace GC后**，会计算当前Metaspace的**空闲空间比**。如果空闲比**小于\(\<\)**这个参数值（即实际非空闲占比过大，内存不够用），那么JVM将增长Metaspace大小。**默认值是40，即40%。**
 
 设置该参数可以控制Metaspace的增长速度，太小的值会导致Metaspace增长缓慢，Metaspace的使用逐渐趋于饱和，可能会影响之后类的加载。而太大又会导致Metaspace增长过快，浪费内存。
 
 ##### MaxMetaspaceFreeRatio
 
-**最大空闲比** ，同MixMetaspaceFreeRatio作用类似。GC之后计算了空闲比，如果比值**大于(>)**这个参数值，那么JMV将会释放Metaspace的部分空间。**默认值是70，即70%。**
+**最大空闲比** ，同MixMetaspaceFreeRatio作用类似。GC之后计算了空闲比，如果比值**大于\(\>\)**这个参数值，那么JMV将会释放Metaspace的部分空间。**默认值是70，即70%。**
 
 ##### MaxMetaspaceExpansion
 
-Metaspace增长时的最大幅度，即每次增长的内存大小不能**超过(>)**这个参数设置的值。默认值是5452592B（大约为5MB）。
+Metaspace增长时的最大幅度，即每次增长的内存大小不能**超过\(\>\)**这个参数设置的值。默认值是5452592B（大约为5MB）。
 
 ##### MinMetaspaceExpansion
 
-Metaspace增长时的最小幅度。即每次增长的内存大小不能**小于(<)**这个参数设置的值。默认值为340784B（大约330KB为）。
+Metaspace增长时的最小幅度。即每次增长的内存大小不能**小于\(\<\)**这个参数设置的值。默认值为340784B（大约330KB为）。
