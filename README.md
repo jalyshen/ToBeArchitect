@@ -12,6 +12,7 @@
 高并发系统架构
 
 * [分布式系统架构](Distributed_Architect.md)
+* [Redis](./Redis_Index.md)
 
 [领域设计](Domain_Design.md)
 

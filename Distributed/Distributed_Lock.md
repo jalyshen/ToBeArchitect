@@ -59,23 +59,23 @@ https://www.toutiao.com/a6888181072912187915/
 
 * App重复请求
 
-  ![](./Duplicate_Data.png)
+  ![](./images/Duplicate_Data.png)
 
 #### 业务场景2:用户下单库存超卖问题
 
-![](./SimgleUser_OverSKU.jpg)
+![](./images/SimgleUser_OverSKU.jpg)
 
 当只有一个实例的时候，如上图，可以通过单机的Lock（多线程的各种同步机制）来解决串行化下单的问题，避免出现重复下单，重复和减库存问题。
 
 当同一个服务多个节点部署时：
 
-![](./MiltipleUser_OverSKU.png)
+![](./images/MiltipleUser_OverSKU.png)
 
 两次（或多次）请求达到不同的节点（实例），当两个（多个）用户对同一个商品下单的时候，如上图，会出现扣减两次（多次）库存。假如此时库存数量为1，那么扣减两次（多次）库存之后就会变为-1（-x，x>1），就出现了超卖的情况。
 
 那么如何能防止超卖的场景发生呢？
 
-![](./MiltipleUser_OverSKU_Lock.png)
+![](./images/MiltipleUser_OverSKU_Lock.png)
 
 假如两个节点获取的是同一把锁，就可以解决上面的问题。如上图，通过一个外部的存储存放一把“锁”，每次请求过来都需要先获得锁。假如我们通过一个变量A来获得锁，获得锁之后将值设置为1，释放锁时设置值为0。当有另外一个请求过来的时候，需要获得锁，当A的值为1时就要等待，直到A的值变为0（即别的节点释放了该锁）。
 
@@ -113,15 +113,15 @@ public boolean tryGetLock(Jedis jedis,String lockKey,String requestId,int expire
 
 我们再分析一下：
 
-![](./DeleteLock_WithError.jpg)
+![](./images/DeleteLock_WithError.jpg)
 
 实际上还有会错误的删除锁的情况出现。如上图所示，节点A的请求成功获得了锁，设置了30秒的过期时间。
 
-![](./DeleteLock_WithError_2.jpg)
+![](./images/DeleteLock_WithError_2.jpg)
 
 但是节点A执行的可能稍微慢了些，30秒过了还没有执行完，此时Redis就会自动“释放”此锁，而节点B就成功了获得了锁。
 
-![](./DeleteLock_WithError_3.jpg)
+![](./images/DeleteLock_WithError_3.jpg)
 
 如果节点B刚刚获得了锁，节点A也刚刚好执行完，就会执行Del指令来“释放”该锁。不巧的是，节点B刚刚获得锁，正在执行。可想而知，节点A释放的是B的锁。
 
