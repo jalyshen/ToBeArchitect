@@ -8,6 +8,12 @@ https://www.oreilly.com/radar/the-world-beyond-batch-streaming-101/
 
 
 
+翻译更好的文章：
+
+https://www.jianshu.com/p/e4c440d1beee
+
+
+
 流式数据处理目前是大数据中的一个重要部分：
 
 * 企业期望更及时的数据，切换到流式处理是实现低延迟的好办法
