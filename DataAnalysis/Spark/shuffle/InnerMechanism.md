@@ -190,7 +190,7 @@ Spark Shuffle共包括两部分：
 * 内存量： 存放数组的sort所需要的数组 + 排序所占用的空间
 * 取决于输入数据量的大小
 
-##### PartionedPairBuffer
+##### PartitionedPairBuffer
 
 * 实现
   * 底层是特殊的Array
