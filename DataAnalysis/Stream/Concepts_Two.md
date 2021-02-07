@@ -72,5 +72,21 @@ Pipeline中的转换来决定结果。例如：计算总和，构建直方图，
 
 ![](./images/concepts2/PTransform.jpg)
 
-​                                                                  图 1 Transform变换的类型 
+​                                                                  图 1 Transform变换的类型 - 转换 | 聚合 | 组合
+
+如果觉得不甚明白，或者只是想要参考，可以看看Google Dataflow Java SDK文档。
+
+为了对例子说明，假设我们从一个PCollection<KV<String, Integer>>命名为"input"（即有一个键/值对的字符串和整数组成的PCollection，其中字符串是类似团队名称，整数是相应团队中个人的得分）。在现实世界的Pipeline中，通过从I/O源读取PCollection原始数据（例如日志记录）获得输入，将日志记录解析为适当的键/值对，然后将其转换为PCollection<KV<String, Integer>>。 为了在第一个例子中清楚起见，将包括所有这些步骤的伪代码，但是在随后的例子中，删除了I/O和解析部分。
+
+因此，对于简单地从I/O源读取数据的管道，解析出团队/分数键值对，并计算每队的得分数，代码如下：
+
+```java
+PCollection<String> raw = IO.read(...);
+PCollection<KV<String, Integer>> input = raw.apply(ParDo.of(new ParseFn());
+PCollection<KV<String, Integer>> scores = input.apply(Sum.integersPerKey());
+```
+
+​                                                                  列表 1. 计算总和Pipeline
+
+从数据源读取键值对数据，键是String类型（团队名称），值是Integer类型（团队中个人得分）。然后对每个键（团队）计算总和（团队得分），并输出。
 
