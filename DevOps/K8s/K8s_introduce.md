@@ -8,7 +8,7 @@ Kubernetes是CNCF的重要项目，同时也是目前三大主流容器平台之
 
 ## K8s概述
 
-Kubernetes，简称K8s，是一个云平台容器管理的开源应用。谈到Kubernetes，就不能不提到Google的Borg洗头膏。Google的Borg系统负责管理几十万个Jobs，跨多个集群，每个集群有上万个机器。Kubernetes的架构设计基本上是参照Google Borg。
+Kubernetes，简称K8s，是一个云平台容器管理的开源应用。谈到Kubernetes，就不能不提到Google的Borg系统。Google的Borg系统负责管理几十万个Jobs，跨多个集群，每个集群有上万个机器。Kubernetes的架构设计基本上是参照Google Borg。
 
 下图是Google Borg的示意图：
 
@@ -16,7 +16,7 @@ Kubernetes，简称K8s，是一个云平台容器管理的开源应用。谈到K
 
 ​                                                                               Google Borg系统采用的主从架构
 
-K8s是一个比较典型的Server-Client架构，也可以说是主-从架构。Master节点作为中央的管控节点，负责管理各个运行任务负载的Node节点：
+K8s是一个比较典型的Server-Client架构，也可以说是**主-从**架构。Master节点作为中央的管控节点，负责管理各个运行任务负载的Node节点：
 
 ![](./images/K8sIntroduce/K8s-Master-Slave.png)
 
@@ -34,15 +34,15 @@ Master主要由四部分组成： API Server、Controller、Scheduler以及etcd�
 
 * **Controller：**控制器负责集群状态的管理，比如自动对容器修复、自动水平扩张，都是由控制器来完成
 
-* **Scheduler：**调度器负责调度操作，比如把一个用户提交的COntainer，依据它的资源需求，选择合适的节点进行放置
+* **Scheduler：**调度器负责调度操作，比如把一个用户提交的Container，依据它的资源需求，选择合适的节点进行放置
 
 * **etcd：**分布式存储系统，API Server中所需要的信息都存在etcd中。K8s通过etcd来保证Master所有组件的高可用
 
 ## K8s Node
 
-Kubernetes的Node是真正运行业务负载的节点，业务负载会以Pod的形式运行。Pod相当于一个容器组，一个Pod包含一个或多个容器。
+Kubernetes的Node是真正运行业务负载的节点，业务负载会以Pod的形式运行。Pod相当于一个容器组，**一个Pod包含一个或多个容器**。
 
-**运行这些Pod的组件叫做Kubelet**，是Node上**最为关键**的组件。Kubelet接受到API Server的指令，需要Pod运行的状态，然后提交到容器运行时（Container Runtime）组件中。
+**运行这些Pod的组件叫做Kubelet**，是Node上**最为关键**的组件。Kubelet接受到Masert节点API Server的指令，需要Pod运行的状态，然后提交到容器运行时（Container Runtime）组件中。
 
 ![](./images/K8sIntroduce/K8s-Node-Archetect.png)
 
@@ -50,7 +50,7 @@ Kubernetes的Node是真正运行业务负载的节点，业务负载会以Pod的
 
 创建容器所需要运行的环境，需要对存储和网络进行管理。K8s依靠Storage Plugin或者是Network Plugin来配置存储和网络。
 
-**Kube-Proxy**负责为Pod创建代理服务，从API Server获取所有Server信息，并根据Server信息创建代理服务，实现Server到Pod的请求路由和转发，从而实现K8s集群的负载均衡和服务间通讯。
+**Kube-Proxy**负责为Pod创建代理服务（<font color=' red'> *Jaly疑问：Nginx的角色？*</font>），从API Server获取所有Server信息（<font color=' red'> *Jaly疑问：这个server指的是什么？*</font>），并根据Server信息创建代理服务（<font color=' red'> *Jaly疑问：从这句话理解，这里的'server'指的是pod里运行的业务server*</font>），实现Server到Pod的请求路由和转发，从而实现K8s集群的负载均衡和服务间通讯。
 
 ## K8s启动容器的过程
 

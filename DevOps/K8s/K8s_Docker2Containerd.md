@@ -58,7 +58,7 @@ Docker启动容器的过程如下：
 
 Containerd 1.0版本，通过一个单独的进程CRI-containerd来完成对CRI的适配。
 
-![](/Users/jaly/Documents/ToBeArchitect/DevOps/K8s/images/Docker2Containerd/Containerd-1.0.png)
+![](./images/Docker2Containerd/Containerd-1.0.png)
 
 ​                                                                                     Containerd 1.0
 
