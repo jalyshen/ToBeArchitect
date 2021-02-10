@@ -18,7 +18,7 @@ JWT 就是一种Cookie-Session改造版的具体实现，让你省去自己造�
 
 JWT 最后的形式就是个字符串，它由**头部**、**载荷**与**签名**这三部分组成，中间以「**.**」分隔。像下面这样：
 
-![](./images/structure.png)
+![jwt格式](https://github.com/jalyshen/ToBeArchitect/blob/main/Distributed/JWT/images/structure.png)
 
 ​                                                            图 1 JWT格式
 
