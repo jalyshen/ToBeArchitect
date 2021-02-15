@@ -345,11 +345,171 @@ Redis各种对象类型支持的内部编码如下图所示（版本3.0，后续
 
   内层的哈希使用的内部编码可以是压缩列表（ziplist）和哈希表（hashtable）两种；Redis的外层的哈希则只使用了hashtable。
 
+  压缩列表前面已经介绍过了。与哈希表相比，压缩列表用于元素个数少、元素长度小的场景。其优势在于集中存储、节省空间；同时，虽然对于元素的操作复杂度也由O(1)变为了O(n)，但由于哈希中元素数量较少，因此操作的时间并没有明显劣势。
+
+  hashtable：一个hashtable由1个dict结构、2个dictht结构、1个dictEntry指针数组（称为bucket）和多个dictEntry结构组成。
+  正常情况下（即hashtable没有进行rehash时）各部分的关系如下图所示：
+
+  ![hashtable-encoding](./images/memory/hashtable-encoding.png)
+
+  下面从下往上的方向（逻辑上讲，是从下往上；从图的方位上讲，是从右往左），依次介绍各个结构：
+
+  1. **dictEntry**
+
+     dictEntry的结构用于保存键值对，结构定义如下：
+
+     ```c
+     typedef struct dictEntry{
+       void *key;
+       union {
+         void *val;
+         uint64_tu64;
+         int64_ts64;
+       }v;
+       struct dictEntry *next;
+     }dictEntry;
+     ```
+
+     其中，各个属性的功能如下：
+
+     * key：键值对中的键
+
+     * val：键值对中的值，使用union（共同体）实现，存储的内容既可能是一个指向值得指针，也可能是64位整型，或者无符号64位整型
+     * next：指向下一个dictEntry的指针，用于解决哈希冲突问题
+
+     在64位系统中，一个dictEntry结构占24字节（key/value/next各8个字节）
+
+  2. **bucket**
+
+     bucket是一个数组，数组的每个元素都是指向dictEntry结构的指针。redis中**bucket数组的大小计算规则如下：取最小的2^n，设为X，使得这个X的值大于dictEntry的数量**。例如：如果有1000个dictEntry，那么bucket大小为1024；如果有1500个dictEntry，则bucket的大小为2048。
+
+  3. **dictht**
+
+     dictht的结构如下：
+
+     ```c
+     typedef struct dictht{
+         dictEntry **table;
+         unsigned long size;
+         unsigned long sizemask;
+         unsigned long used;
+     }dictht;
+     ```
+
+     其中，各个属性的功能说明如下：
+
+     * table：是个指针，指向bucket
+     * size：记录哈希表的大小，即bucket的大小
+     * sizemask：值始终是 size -1，这个属性和哈希值一起决定一个键在table中存储的位置
+     * used：记录已经使用的dictEntry的数量
+
+  4. **dict**
+
+     一般来说，通过使用dictht和dictEntry结构，便可以实现普通哈希表的功能。但是redis的实现中，在dictht结构的上层，还有一个dict结构。下面是dict的定义：
+
+     ```c
+     typedef struct dict{
+         dictType *type;
+         void *privdata;
+         dictht ht[2];
+         int trehashidx;
+     } dict;
+     ```
+
+     其中，type属性和privdata属性是为了适应不同类型的键值对，用于创建多态字典。
+
+     “ht”和“trehashidx”则用于rehash，即当哈希表需要扩展或收缩时使用。ht是一个包含两个项的数组，每项都指向一个dictht结构，这也是redis的哈希表会有1个dict、2个dictht结构的原因。通常情况下，所有的数据都存放在dict的***ht[0]***中，***ht[1]***只在rehash的时候使用。dict进行rehash操作的时候，将ht[0]的所有数据rehash到ht[1]中，然后将ht[1]赋值给ht[0]，并清空ht[1]。
+
+     因此，redis中的哈希值所以在dictht和dictEntry结构之外还有一个dict结构，一方面是为了适应不同类型的键值对，另一方面也是为了rehash。
+
 * **编码转换**
+
+  如前所述，redis中内层的哈希既可以使用哈希表，也可以使用压缩列表。
+
+  只有同时满足下面两个条件时，才会使用压缩列表：
+
+  1. 哈希中元素数量小于512个
+  2. 哈希中所有键值对的键和值，字符串长度都小于64字节
+
+  如果有一个条件不满足，则使用哈希表，且编码只能由压缩列表转化为哈希表，反方向则不可能。
+
+  下图展示了redis内层的哈希编码转换的特点：
+
+  ![hashtable-encoding-exchange](./images/memory/hashtable-encoding-exchange.png)
 
 #### 4.4 集合
 
+* **概况**
+
+  集合（Set）与列表类似，都是用来保存多个字符串，但集合与列表有两点不同：
+
+  1. 集合中的元素是**无序的**，不同通过索引来操作元素
+  2. 集合中的元素**不能**有重复
+
+  一个集合中最多可以存储 ***2^32-1*** 个元素。除了支持常规的增删改查，Redis还支持多个集合**取交集、并集、差集**。
+
+* **内部编码**
+
+  集合的内部编码可以是整数集合（Intset），或是哈希表（hashtable）。
+
+  哈希表前面已经讲过，这里略过不提；需要注意的是，集合在**使用哈希表时，值全部被置为null**。
+
+  ***整数集合***的结构定义如下：
+
+  ```c
+  typedef struct intset{
+      uint32_t encoding;
+      uint32_t length;
+      int8_t contents[];
+  } intset;
+  
+  ```
+
+  其中，encoding代表contents中存储内容的类型，虽然contents（存储集合中的元素）是int8_t类型，但实际上其存储的值是int16_t、int32_t或int64_t，具体的类型便是有encoding决定的； length表示元素个数。
+
+  整数集合适用于集合所有元素都是整数且集合元素数量较小的时候，与哈希表相比，整数集合的优势在于集中存储、节省空间；同时，虽然对于元素的操作复杂度也由O(1)变为了O(n)，但是由于集合数量较少，因此操作的时间并没有明显劣势。
+
+* **编码转换**
+
+  只有同时满足下面两个条件时，集合才会使用整数集合：
+
+  1. 集合中元素数量小于512个
+  2. 所有元素都是整数值
+
+  如果有一个条件不满足，则使用哈希表，且编码只可能由整数集合转化为哈希表，反方向则不可能。
+
+  下图真是了集合编码转换的特点：
+
+  ![set_encoding_exchange](./images/memory/set_encoding_exchange.png)
+
 #### 4.5 有序集合
+
+* **概况**
+
+  有序集合与集合一样，元素都不能重复，但与集合不同的是，有序集合中的元素是有顺序的。与列表使用索引下标作为排序依据不同，有序集合为每个元素设置一个分数（score）作为排序依据。
+
+* **内部编码**
+
+  有序集合的内部编码可以是压缩列表（ziplist）或者跳跃表（skiplist）。ziplist在列表和哈希表中都有使用，已经介绍过了。
+
+  跳跃表，是一种有序数据结构，通过在每个节点中维持多个指向其他节点的指针，从而达到快速访问节点的目的。除了跳跃表，实现有序数据结构的另一种典型实现是平衡树。大多数情况下，跳跃表的效率可以和平衡树媲美，而且跳跃表实现比平衡树简单很多，因此Redis中选用跳跃表替代平衡树。
+
+  跳跃表支持平均O(logN)、最坏O(N)的复杂点进行节点查找，并支持顺序操作。Redis的跳表实现由***zskiplist***和***zskiplistNode***两个结构组成：前者用于保存跳远表信息（如头节点、尾节点、长度等），后者用于表示跳跃表节点。
+
+  。。。 具体结构后面补上。。。
+
+* **编码转换**
+
+  只有同时满足下面两个条件时，才会使用压缩列表：
+
+  1. 有序集合中元素数量小于128个
+  2. 有序集合中所有成员长度都不足64字节
+
+  如果有一个条件不满足，则使用跳跃表；且编码只可能由压缩列表转化为跳跃表，反方向则不可能。
+
+  下图展示了有序集合编码转换的特点：
+
+  ![zset-encoding-exchange](./images/memory/zset-encoding-exchange.png)
 
 ### 5. 应用举例
 
