@@ -6,9 +6,11 @@
 
 ## 区块链定义
 
-​        从字面来解释，就是一个个数据块，以链式结构组成的一个数据库。整个链的内容形成完整的内容，每个小块（Block）的内容，是组成完成内容的一小部分。
+​        从字面来解释，就是一个个数据块，以链式结构组成的一个数据库。整个链的内容形成完整的内容，每个小块（Block）的内容，是组成完成内容的一小部分。抽象成图形，大致如下的形式：
 
-在“比特币”应用中，每个小块（Block）记录的内容，就是比特币交易的信息。
+​        ![Blockchain-map](./images/BlockChain/BlockChain-BlockChain-map.png)
+
+​        在“比特币”应用中，每个小块（Block）Body里记录的内容，就是比特币交易的信息。
 
 ## 区块的数据结构
 
@@ -26,15 +28,19 @@
 
 #### Head-Hash
 
-​        每个区块（Block）都有一个唯一的哈希值。这个哈希值是通过如下的内容产生的：
+​        每个区块（Block）都有一个唯一的哈希值。
 
-* Head-Hash = SHA256 ( SHA256 ( ***Parent-Hash** + **Body-Hash** + **Nonce-Hash*** ) )
+​        这个哈希值是通过如下的公式产生：
 
-​        公式里的每个hash值，都是双层SHA-256后的结果
+```powershell
+Head_Hash = SHA256 ( SHA256 ( Parent_Hash + Body_Hash + Nonce_Hash ) )
+```
+
+​        这个公式中的每个hash值（*Parent_Hash、Body_Hash、Nonce_Hash*），也都是经过双层SHA-256后的结果。
 
 #### Parent-Hash
 
-​        上一个区块的Hash串。这个值，就是“head-hash”的串
+​        放置上一个区块的Head-Hash串。“区块链”就是通过这个 ***Parent-Hash***  “**链**”起来的。
 
 #### Merkle-Root
 
@@ -62,7 +68,11 @@
 
 #### Difficulty
 
+#### Nonce
 
+​        一个随机数，是 ***Number once*** 或者 ***Number used once*** 的缩写。在密码学中Nonce是一个只被使用一次的任意或非重复的随机数值。
+
+​        在密码学中Nonce是一个只被使用一次的任意或非重复的随机数值，在加密技术中的初始向量和加密散列函数都发挥着重要作用，在各类验证协议的通信应用中确保验证信息不被重复使用以对抗重放攻击(Replay Attack)。在[信息安全](https://baike.baidu.com/item/信息安全/339810)中，**Nonce**是一个在加密通信只能使用一次的数字。在认证协议中，它往往是一个[随机](https://baike.baidu.com/item/随机)或[伪随机](https://baike.baidu.com/item/伪随机)数，以避免[重放攻击](https://baike.baidu.com/item/重放攻击/2229240)。Nonce也用于[流密码](https://baike.baidu.com/item/流密码/1395110)以确保安全。如果需要使用相同的密钥加密一个以上的消息，就需要Nonce来确保不同的消息与该密钥加密的密钥流不同。
 
 ## 区块链分叉
 
