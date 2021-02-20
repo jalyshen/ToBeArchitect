@@ -36,7 +36,7 @@
 Head_Hash = SHA256 ( SHA256 ( Parent_Hash + Body_Hash + Nonce_Hash ) )
 ```
 
-​        这个公式中的每个hash值（*Parent_Hash、Body_Hash、Nonce_Hash*），也都是经过双层SHA-256后的结果。
+​        这个公式中的每个hash值（*Parent_Hash、Body_Hash、Nonce_Hash*），也都是经过**双层**SHA-256后的结果。
 
 #### Parent-Hash
 
@@ -67,6 +67,8 @@ Head_Hash = SHA256 ( SHA256 ( Parent_Hash + Body_Hash + Nonce_Hash ) )
 ​        这个好理解，就是创建当前Block时的服务器的时间戳信息
 
 #### Difficulty
+
+​        一个双层SHA-256的字符串
 
 #### Nonce
 
