@@ -1,4 +1,4 @@
-[IF-IDF](./Data/Analysis/IF-IDF/IF-IDF.md)
+[TF-IDF](./Data/Analysis/TF-IDF/TF-IDF.md)
 
 [BM25](./DataAnalysis/BM25/BM25_Introduction.md)
 
