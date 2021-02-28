@@ -8,3 +8,4 @@
 
 [Stream](./DataAnalysis/Stream/Stream.md)
 
+[WhyUsingLog](./WhyUsingLog.md)
