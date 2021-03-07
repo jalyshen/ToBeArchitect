@@ -32,7 +32,7 @@ info memory
 
 ​        返回结果中比较重要的几个说明：
 
-* **used_memory**: Redis分配器分配的内存总量（单位是字节），**包括**使用的虚拟内存（即swap）；Redis分配器后面介绍。used_memory_human是次值的友好显示
+* **used_memory**: Redis分配器分配的内存总量（单位是字节），**包括**使用的虚拟内存（即swap）；Redis分配器后面介绍。used_memory_human是此值的友好显示
 
 * **used_memory_rss**: Redis进程占用操作系统的内存（单位是字节），与**top**及**ps**命令看到的值是一致的；除了分配器分配的内存之外，used_memory_rss还包括进程运行本身需要的内存、内存碎片等，但是**不包括虚拟内存**。
 
@@ -44,7 +44,7 @@ info memory
 
   mem_fragmentation_ratio **一般大于1** ，<font color='red'>且该值越大，内存碎片比例越大</font>；mem_fragmentation_ratio <font color='red'>小于 1， 说明Redis使用了虚拟内存</font>。由于虚拟内存的媒介是磁盘，比内存速度慢很多。当这种情况出现时，应该及时排查，如果内存不足应该及时处理，如增加Redis节点、增加Redis服务器内存、优化应用等等。
 
-  一般来说，mem_fragmentation_ratio在**1.03左右是比较监控的状态**（对于jemalloc来说）；上面截图中的mem_fragmentation_ratio值很大，是因为还没有向Redis存入数据，Redis进程本身运行的内存使得used_memory_rss比used_memory大得多。
+  一般来说，mem_fragmentation_ratio在**1.03左右是比较健康的状态**（对于jemalloc来说）；上面截图中的mem_fragmentation_ratio值很大，是因为还没有向Redis存入数据，Redis进程本身运行的内存使得used_memory_rss比used_memory大得多。
 
 * **mem_allocator**: Redis使用的内存分配器，在编译时指定；可以是libc、jemalloc或者tcmalloc，默认是jemalloc；截图中使用的就是默认的jemalloc。
 
@@ -625,7 +625,7 @@ public static void insertData(){
 
 ​        内存碎片是一个重要的参数，对Redis内存的优化有重要意义。
 
-​        如果内存碎片率过高（jemalloc在1.03左右比较正常），说明内存碎片多，内存浪费严重。这个时候可以考虑重启Redis，在内存中对数据进行重拍，减少内存碎片。
+​        如果内存碎片率过高（jemalloc在1.03左右比较正常），说明内存碎片多，内存浪费严重。这个时候可以考虑重启Redis，在内存中对数据进行重排，减少内存碎片。
 
 ​        如果内存碎片率小于1，说明Redis内存不足，部分数据使用了虚拟内存（即swap）。由于虚拟内存的存取速度比物理内存差很多（2-3个数量级），此时Redis的访问速度可能会变的很慢。因此必须设法增加物理内存（可以增加服务器节点数量，或提高单机内存），或减少Redis中的数据。
 
