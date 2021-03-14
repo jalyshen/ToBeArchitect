@@ -391,9 +391,66 @@ typedef struct clusterState {
 
 ## 四、客户端访问集群
 
+​        在集群中，数据分布在不同的节点中，客户端通过某个节点访问数据时，数据可能不在该节点中。下面介绍集群是如何处理这个问题的。
+
 ### 4.1 redis-cli
 
+​        当节点收到redis-cli发来的命令（如get/set）时，过程如下：
+
+* 计算key属于哪个槽： CRC16(key) & 16383
+
+  集群提供的cluster keyslot命令也是使用这个公式实现的。如：
+
+  ![cluster-slot](./images/cluster/cluster-keyslot.png)
+
+* 判断key所在的槽点是否在当前节点：假设key位于第$$i$$个槽，*clusterState.slots[$$i$$]* 则指向了槽所在的节点：如果*clusterState.slots[$$i$$] == clusterState.myself*，说明槽在当前节点，可以直接在当前节点执行命令；否则，槽不在当前节点，则查询槽所在的节点地址（*clusterState.slots[$$i$$].ip/port*) ，并将其包装到MOVED错误中，返回给redis-cli
+
+* redis-cli收到MOVED错误后，根据返回的ip和port，重新发送请求
+
+​        下面的例子展示了redis-cli和集群的互动过程：在7000节点中操作key1，但key1所在的槽9189在节点7001上，因此节点返回MOVED错误（包含7001节点的ip和port）给redis-cli，redis-cli重新向7001发起请求：
+
+![redis-cli-send-1](./images/cluster/redis-cli-send-1.png)
+
+​        上面，redis-cli通过-c制定了集群模式，如果没有指定，redis-cli无法处理MOVED错误。下面是redis-cli无法处理MOVED信息：
+
+![redis-cli-moved](./images/cluster/redis-cli-moved.png)
+
 ### 4.2 Smart客户端
+
+​        redis-cli这一类客户端称为Dummy客户端，因为它们在执行命令前，不知道数据在哪个节点上，需要借助MOVED重新定向。与Dummy客户端对应的是Smart客户端。
+
+​        Smart客户端（如JedisCluster）的基本原理：
+
+1. JedisCluster初始化时，在内部维护slot->node的缓存，方法是连接任一节点，执行cluster slots命令，该命令返回如下内容：
+
+   ![cluster-slots](./images/cluster/cluster-slots.png)
+
+2. 此外，JedisCluster为每个节点创建连接池（即JedisPool）
+
+3. 当执行命令时，JedisCluster根据key->node选择需要连接的节点，发送命令。如果成功，则命令执行完毕；如果失败，则会随机选择其他节点进行重试，并在出现MOVED时，使用cluster slots重新同步slot->node的映射关系
+
+​        下面代码演示了如何使用JedisCluster访问集群（为考虑资源释放、异常处理）：
+
+```java
+public static void test() {
+   Set<HostAndPort> nodes = new HashSet<>();
+   nodes.add(new HostAndPort("192.168.72.128", 7000));
+   nodes.add(new HostAndPort("192.168.72.128", 7001));
+   nodes.add(new HostAndPort("192.168.72.128", 7002));
+   nodes.add(new HostAndPort("192.168.72.128", 8000));
+   nodes.add(new HostAndPort("192.168.72.128", 8001));
+   nodes.add(new HostAndPort("192.168.72.128", 8002));
+   JedisCluster cluster = new JedisCluster(nodes);
+   System.out.println(cluster.get("key1"));
+   cluster.close();
+}
+```
+
+​        注意事项有：
+
+1. JedisCluster中已经包含所有节点的连接池，因此**JedisCluster要使用单例**
+2. 客户端维护了slot->node映射关系，以及为每个节点创建了连接池，当节点数量较多时，应注意客户端内存资源和连接资源的消耗
+3. Jedis较新版本针对JedisCliuster做了性能优化，如cluster slots缓存更新和锁阻塞等方面的优化，尽量使用2.8版本以上的Jedis
 
 ## 五、实践须知
 
