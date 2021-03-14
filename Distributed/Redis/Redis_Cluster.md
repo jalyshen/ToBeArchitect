@@ -279,13 +279,115 @@ gem install redis #gem是ruby的包管理工具，该命令可以安装ruby-redi
 * **ping消息**：集群里每个节点**每秒**钟会选择**部分节点**发送ping消息，接收者收到后会回复一个pong消息。ping消息的内容是自身节点和部分节点的状态信息，作用是彼此交换信息，以及检测节点是否在线。ping消息使用Gossip协议，接收节点的选择兼顾了收敛速度和带宽成本，具体规则如下：
   * 随机找5个节点，在其中选择**最久**没有通信的一个节点
   * 扫描节点列表，选择最近一次收到pong消息时间大于**cluster_ndoe_timeout/2** 的所有节点，防止这些节点长时间未更新
-* **pong消息**：
-* fail消息
-* publish消息
+* **pong消息**：pong消息封装了自身状态数据。可以分成两种：
+  * 接收到meet/ping消息后回复的pong消息
+  * 向集群广播pong消息，让其它节点可以获得该节点的最新消息。例如故障恢复后，信的主节点会广播pong消息
+* **fail消息**：当一个主节点判断另一个主节点进入fail状态时，会向集群广播这一fail消息，接收节点会将这一fail消息保存起来，便于后续的判断
+* **publish消息**：节点收到publish消息后，会先执行该消息的命令，然后向集群广播这一消息，接收节点也会执行该publish消息里的命令
 
 ### 3.3 数据结构
 
+​        节点需要专门的数据结构来存储集群的状态。所谓集群的状态，是一个比较大的概念，包括：集群是否处于上线状态、集群中的哪些节点、节点是否可达、节点的主从状态、槽的分布……
+
+​        节点为了存储集群状态而提供的数据结构中，最关键的是***clusterNode***和***clusterState***结构：前者记录了一个节点的状态，后者记录了集群作为一个整体的状态。
+
+#### 3.3.1 clusterNode
+
+​        clusterNode结构保存了一个节点的当前状态，包括创建时间、节点id、ip和port等。每个节点都会用一个clusterNode结构记录自己的状态，并为集群内所有其他节点都创建一个clusterNode结构来记录节点状态。
+
+​        下面列举了clusterNode的部分字段：
+
+```c
+typedef struct clusterNode {
+    //节点创建时间
+    mstime_t ctime;
+ 
+    //节点id
+    char name[REDIS_CLUSTER_NAMELEN];
+ 
+    //节点的ip和端口号
+    char ip[REDIS_IP_STR_LEN];
+    int port;
+ 
+    //节点标识：整型，每个bit都代表了不同状态，如节点的主从状态、是否在线、是否在握手等
+    int flags;
+ 
+    //配置纪元：故障转移时起作用，类似于哨兵的配置纪元
+    uint64_t configEpoch;
+ 
+    //槽在该节点中的分布：占用16384/8个字节，16384个比特；每个比特对应一个槽：比特值为1，则该比特对应的槽在节点中；比特值为0，则该比特对应的槽不在节点中
+    unsigned char slots[16384/8];
+ 
+    //节点中槽的数量
+    int numslots;
+ 
+    …………
+ 
+} clusterNode;
+```
+
+​        除了上述字段，clusterNode还包括节点连接、主从复制、故障发现和转移需要的信息等等。
+
+#### 3.3.2 clusterState
+
+​        clusterState结构保存了当前节点视角下，集群所处的状态。主要字段有：
+
+```c
+typedef struct clusterState {
+ 
+    //自身节点
+    clusterNode *myself;
+ 
+    //配置纪元
+    uint64_t currentEpoch;
+ 
+    //集群状态：在线还是下线
+    int state;
+ 
+    //集群中至少包含一个槽的节点数量
+    int size;
+ 
+    //哈希表，节点名称->clusterNode节点指针
+    dict *nodes;
+  
+    //槽分布信息：数组的每个元素都是一个指向clusterNode结构的指针；如果槽还没有分配给任何节点，则为NULL
+    clusterNode *slots[16384];
+ 
+    …………
+     
+} clusterState;
+```
+
+​        除此之外，clusterState还包括故障转移、槽迁移等需要的信息。
+
 ### 3.4 集群命令的实现
+
+​        现在以 *cluster meet、cluster addslots* 为例，说明节点是如何利用上述数据结构和通信机制来实现集群命令的。
+
+#### 3.4.1 cluster meet
+
+​        假设要向节点A发送 *cluster meet* 命令，将B节点加入到A所在的集群，则A节点收到命令后，执行的操作如下：
+
+* A为B创建一个clusterNode结构，并将其添加到clusterState的nodes字典中
+* A向B发送meet消息
+* B收到meet消息后，会为A创建一个clusterNode结构，并将其添加到clusterState的nodes字典中
+* B回复A一个pong消息
+* A收到B的pong消息后，便知道B已经成功接收到meet消息
+* 然后，A向B再发一个ping消息
+* B收到A的ping消息后，便知道A已经成功接收到自己的pong消息，握手完成
+* 之后，A通过Gossip协议，将B的信息广播给集群内的其他节点，其他节点也会与B握手；一段时间后，集群收敛，B成为集群里的一个普通节点
+
+​        通过上述过程发现，集群中两个节点的握手过程与TCP的过程类似，都是三次握手：A向B发送meet -> B向A发送pong -> A向B发送ping。
+
+#### 3.4.2 cluster addslots
+
+​        集群中槽的分配信息，存储在clusterNode的slots数组和clusterState的slots数组中。两个数组的结构前面已经介绍。二者之间的区别在于：前者存储的是该节点中分配了哪些槽，后者存储的是集群中所有槽分别分布在哪个节点。
+
+​        cluster addslots命令接收一个槽或者多个槽为参数。例如，在A节点上执行***cluster addslots {0..10}*** 命令，是将编号为0-10的槽分配给A节点，具体执行过程如下：
+
+* 遍历输入槽，检查它们是否都没有分配过。如果有一个槽被分配过，命令执行失败；方法是检查输入槽在 *clusterState.slots[]* 中对应的值是否为null
+* 遍历输入槽，将其分配给节点A。方法是修改 *clusterNode.slots[]* 中对应的比特为1，以及 *clusterState.slots[]* 中对应的指针指向A节点
+* A节点执行完成后，通过节点通信机制通知其他节点，所有节点都会知道0-10的槽分配给了A节点
 
 ## 四、客户端访问集群
 
