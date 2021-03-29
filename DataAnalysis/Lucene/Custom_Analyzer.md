@@ -141,6 +141,8 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
 }
 ```
 
+从这个EnglishAnalyzer来看，一个分词器，由一个Tokenizer，0个或多个xxxFiler (TokenStream) “串连”而成。这个类似于Servlet的Filter机制。
+
 
 
 ## 编写自己的分词器
