@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>JAVA</ID>
+  <OriginalElement>org.wltea.analyzer.core</OriginalElement>
+  <nodes>
+    <node x="325.0" y="481.0">org.wltea.analyzer.core.QuickSortSet.Cell</node>
+    <node x="973.0" y="850.0">org.wltea.analyzer.core.IKSegmenter</node>
+    <node x="854.0" y="0.0">org.wltea.analyzer.core.Lexeme</node>
+    <node x="0.0" y="977.0">org.wltea.analyzer.core.LetterSegmenter</node>
+    <node x="363.0" y="1109.0">org.wltea.analyzer.core.CJKSegmenter</node>
+    <node x="618.0" y="1021.0">org.wltea.analyzer.core.CN_QuantifierSegmenter</node>
+    <node x="0.0" y="0.0">org.wltea.analyzer.core.AnalyzeContext</node>
+    <node x="363.0" y="850.0">org.wltea.analyzer.core.ISegmenter</node>
+    <node x="1297.0" y="850.0">org.wltea.analyzer.core.CharacterUtil</node>
+    <node x="518.0" y="349.0">org.wltea.analyzer.core.LexemePath</node>
+    <node x="421.0" y="0.0">org.wltea.analyzer.core.QuickSortSet</node>
+    <node x="0.0" y="1431.0">org.wltea.analyzer.core.IKArbitrator</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="org.wltea.analyzer.core.LexemePath" target="org.wltea.analyzer.core.QuickSortSet">
+      <point x="0.0" y="-204.5" />
+      <point x="663.5" y="324.0" />
+      <point x="595.75" y="324.0" />
+      <point x="58.25" y="149.5" />
+    </edge>
+    <edge source="org.wltea.analyzer.core.LetterSegmenter" target="org.wltea.analyzer.core.ISegmenter">
+      <point x="0.0" y="-204.5" />
+      <point x="171.5" y="952.0" />
+      <point x="402.1666666666667" y="952.0" />
+      <point x="-78.33333333333331" y="38.5" />
+    </edge>
+    <edge source="org.wltea.analyzer.core.CJKSegmenter" target="org.wltea.analyzer.core.ISegmenter">
+      <point x="0.0" y="-72.5" />
+      <point x="0.0" y="38.5" />
+    </edge>
+    <edge source="org.wltea.analyzer.core.CN_QuantifierSegmenter" target="org.wltea.analyzer.core.ISegmenter">
+      <point x="0.0" y="-160.5" />
+      <point x="773.0" y="952.0" />
+      <point x="558.8333333333333" y="952.0" />
+      <point x="78.33333333333326" y="38.5" />
+    </edge>
+    <edge source="org.wltea.analyzer.core.QuickSortSet.Cell" target="org.wltea.analyzer.core.QuickSortSet">
+      <point x="0.0" y="-72.5" />
+      <point x="411.5" y="324.0" />
+      <point x="479.25" y="324.0" />
+      <point x="-58.25" y="149.5" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic Group" zoom="1.0" x="499.0" y="773.0" />
+  <SelectedNodes />
+  <Categories>
+    <Category>Fields</Category>
+    <Category>Inner Classes</Category>
+    <Category>Properties</Category>
+    <Category>Constructors</Category>
+    <Category>Methods</Category>
+  </Categories>
+  <SCOPE>All</SCOPE>
+  <VISIBILITY>private</VISIBILITY>
+</Diagram>
+
