@@ -38,3 +38,133 @@
 ​        按照惯例，应当在抛出InterruptedException时清除中断状态。有时候有必要这样做来支持一些清理工作，但这也可能是错误与混乱之源。当处理完InterruptedException后想要传播中断状态，必须要么重新抛出捕获的InterruptedException，要么通过Thread.currentThread().interrupt()重新设置中断状态。如果你的代码调用了其它未正确维持中断状态的代码（例如，忽略InterruptedException又不重设状态），可以能通过维持一个字段来规避问题，这个字段用于保存活动取消的标识，在调用interrupte的时候设置该字段，从有问题的调用中返回时检查该字段。
 
 ​        有两种情况线程会保持休眠而无法检测中断状态或接收InterruptedException：在同步块中和在I/O中阻塞时。线程在等待同步方法或者同步块的锁时不会对中断有响应。但是，如$2.5中讨论的，当需要大幅降低在活动取消间被卡在锁等待中的几率，可以使用lock工具类。使用lock类的代码阻塞仅是为了访问锁对象本身，而不是这些锁所保护的代码。这些阻塞的耗时天生就很短（尽管时间不能严格保证）。
+
+
+
+## I/O和资源撤销 (I/O and Resource Revocation)
+
+​        一些I/O支持类（尤其是java.net.Socket及相关类）提供了在读操作阻塞的时候能够超时的可选途径，在这种情况下就可以在超时后检测中断。java.io中的其它类采用了另一种方式 -- 一种特殊形式的资源撤销。如果某个线程在一个I/O对象s（如InputStream）上执行s.close()，那么任何其它尝试使用s的线程将收到一个IOException。I/O关闭会影响所有使用关闭了的I/O对象的线程，会导致I/O对象不可用。如有必要，可以创建一个新的I/O对象来替代关闭的I/O对象。
+
+​        这与其它资源撤销的用途密切相关（如为了安全目的）。该策略也会保护应用免让共享的I/O对象因其它使用了此I/O对象的线程被取消而自动变得不可用。大部分java.io中的类不会也不能在出现I/O异常时清除失败状态。例如，如果在StreamTokenizer或ObjectInputStream操作中间出现了一个底层I/O异常，没有一个使用的回复动作能继续保持预期的保障。所以，作为一种策略，JVM不会自动中断I/O操作。
+
+​        **这给代码强加了额外的职责来处理取消事件。**若一个线程正在执行I/O操作，如果在此I/O操作期间试图取消该I/O操作，必须意识到I/O对象正在使用且关闭该I/O对象是你想要的行为。如果能接受这种情况，就可以通过关闭I/O对象和中断线程来完成活动取消。例如：
+
+```java
+class CancellableReader {                        // Incomplete
+	private Thread readerThread; // only one at a time supported
+	private FileInputStream dataFile;
+
+	public synchronized void startReaderThread() 
+		throws IllegalStateException, FileNotFoundException {
+		if (readerThread != null) throw new IllegalStateException();
+			dataFile = new FileInputStream("data");
+			readerThread = new Thread(new Runnable() {
+				public void run() { doRead(); }
+			});
+		readerThread.start();
+	}
+
+	protected synchronized void closeFile() { // utility method
+		if (dataFile != null) {
+			try { dataFile.close(); } 
+			catch (IOException ignore) {}
+			dataFile = null;
+		}
+	}
+
+	protected void doRead() {
+		try {
+			while (!Thread.interrupted()) {
+				try {
+					int c = dataFile.read();
+					if (c == -1) break;
+					else process(c);
+				} catch (IOException ex) {
+					break; // perhaps first do other cleanup
+				}
+			}
+		} finally {
+			closeFile();
+			synchronized(this) { readerThread = null; }
+		}
+	}
+
+	public synchronized void cancelReaderThread() {
+		if (readerThread != null) readerThread.interrupt();
+			closeFile();
+	}
+}
+```
+
+很多其它取消I/O的场景源于需要中断那些等待输入而输入却不会或不能及时到来的线程。大部分基于套接字的流，可以通过设置套接字的超时参数来处理。其它的，可以依赖InputStream.available，然后手写自己的带时间限制的轮询循环来避免超时之后还阻塞在I/O中。这种设计可以使用一种类似$3.1.1.5中描述的有时间限制的退避重试协议。例如：
+
+```java
+class ReaderWithTimeout {                // Generic code sketch
+	// ...
+	void attemptRead(InputStream stream, long timeout) throws... {
+		long startTime = System.currentTimeMillis();
+		try {
+			for (;;) {
+				if (stream.available() > 0) {
+					int c = stream.read();
+					if (c != -1) process(c);
+					else break; // eof
+				} else {
+					try {
+						Thread.sleep(100); // arbitrary fixed back-off time
+					} catch (InterruptedException ie) {
+						/* ... quietly wrap up and return ... */ 
+					}
+					long now = System.currentTimeMillis();
+					if (now - startTime >= timeout) {
+						/* ... fail ...*/
+					}
+				}
+			}
+		} catch (IOException ex) { /* ... fail ... */ }
+	}
+}
+```
+
+> *脚注：有些JDK发布版本也支持InterruptedIOException，但只是部分实现了且仅限于某些平台。在本文撰写之时，未来版本打算停止对其支持，部分原因是由于I/O对象不可用会引起不良后果。但既然InterruptedIOException定义为IOException的一个子类，这种设计的工作方式与包含InterruptedIOException支持的版本上描述的相似，尽管存在额外的不确定性：中断可能抛出InterruptedIOException或InterruptedException。捕获InterruptedIOException然后将其作为一个InterruptedException重新抛出能部分解决该问题。*
+
+## 异步终止(Asynchronous Termination)
+
+​        stop方法起初包含在Thread类中，但是已经不推荐使用了。**Thread.stop()会导致不管线程正在做什么就突然抛出一个ThreadDeath异常**（*不推荐使用的原因*）。（与interrupt()类似，stop()不会中止锁等待或I/O等待。但与Interrupt不同的是，它不严格保证中止wait()，sleep()或join()）。
+
+​        这会是个非常危险的操作。因为Thread.stop()产生异步信号，某些操作由于程序安全和对象一致性必须回滚或前滚，而活动正在执行这些操作或代码段时可能被终止掉。例如：
+
+```java
+class C {                                         // Fragments
+	private int v;  // invariant: v >= 0
+
+	synchronized void f() {
+		v = -1  ;   // temporarily set to illegal value as flag
+		compute();  // possible stop point (*)
+		v = 1;      // set to legal value
+	}
+
+	synchronized void g() { 
+		while (v != 0) { 
+			--v; 
+			something(); 
+		} 
+	}
+}
+```
+
+如果Thread.stop()碰巧导致(*)行终止，对象就被破坏了：线程一旦终止，对象将保持在不一致状态，因为变量v被设了一个非法的值。其它线程在该对象上的任何调用会执行不想要的或危险的操作。例如，这里g()方法中的循环将自旋 2 * Integer.MAX_VALUE次。stop()让回滚或前滚恢复技术的使用变得极其困难。乍一看，这个问题看起来不太严重-- 毕竟，调用compute()抛出的任何未捕获异常都会破坏状态。但是，Thread.stop()的后果更隐蔽，因为在可能忽略了ThreadDeath异常（由Thread.stop()抛出）而仍传播取消请求的方法中你什么也做不了。而且，除非在每行代码后面都放一个catch(ThreadDeath)，否则就没有办法准确恢复当前对象的状态，所以可能碰到未检测到的破坏。相比之下，通常可以将代码写得健壮些，不用大费周章就能消除或处理其它类型的运行时异常。
+
+​        换言之，**禁用Thread.stop()不是为了修复它有缺陷的逻辑，而是纠正对其功能的错误认识**。不可能允许所有方法的每条字节码都能出现取消操作导致的异常（底层操作系统代码开发者非常熟悉这个事实。即使程序非常短，很小的异步取消安全的例程也会是个艰巨的任务。）
+
+​        注意，任意正在执行的方法可以捕获并忽略由stop()导致的ThreadDeath异常。这样的话，stop()就和interrupte()一样不能保证线程会被终止，这更危险。任何stop()的使用都暗含着开发者评估过试图突然终止某个活动带来的潜在危害比不这样做的潜在危害更大。
+
+## 资源控制(Resource Control)
+
+​        活动取消可能出现在可装载和执行外部代码的任一系统的设计中。试图取消未遵守标准约定的代码面临着难题。外部代码也许完全忽略了中断，甚至是捕获ThreadDeath异常后将其丢弃，在这种情况下调用
+
+Thread.interrupt()和Thread.stop()将不会有什么效果。
+
+​        你无法精准控制外来代码的行为及其耗时。但能够且应当使用标准的安全措施来限制不良后果。一种方式是创建和使用一个SecurityManager，当某个线程运行的时间太长，就拒绝所有对受检资源的请求。这种形式的资源拒绝同$3.1.1.2中讨论的资源撤销策略一起，能够阻止外部代码执行任一与其它应当继续执行的线程竞争资源。副作用就是，这些措施经常最终会导致线程因异常而挂掉。
+
+​        此外，可以调用某个线程的setPriority(Thread.MIN_PRIORITY)将CPU资源的竞争降到最小。可以用一个SecurityManager来阻止该线程将优先级提高。
