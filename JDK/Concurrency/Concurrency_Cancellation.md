@@ -168,3 +168,46 @@ Thread.interrupt()和Thread.stop()将不会有什么效果。
 ​        你无法精准控制外来代码的行为及其耗时。但能够且应当使用标准的安全措施来限制不良后果。一种方式是创建和使用一个SecurityManager，当某个线程运行的时间太长，就拒绝所有对受检资源的请求。这种形式的资源拒绝同$3.1.1.2中讨论的资源撤销策略一起，能够阻止外部代码执行任一与其它应当继续执行的线程竞争资源。副作用就是，这些措施经常最终会导致线程因异常而挂掉。
 
 ​        此外，可以调用某个线程的setPriority(Thread.MIN_PRIORITY)将CPU资源的竞争降到最小。可以用一个SecurityManager来阻止该线程将优先级提高。
+
+## 多步取消(Multiphase Cancellation)
+
+​        有时候，即使取消的是普通的代码，损害也比通常的更大。为应付这种可能性，可以建立一个通用的多步取消功能，尽可能尝试以破坏性最小的方式来取消任务，如果稍时候还没有终止，再使用一种破坏性较大的方式。
+
+​        在大多数操作系统进程级，多步取消是一种常见的模式。例如，它用在Unix关闭期间，先尝试使用kill -1 终止任务，若有必要随后再用kill -9，大多数win系统中的任务管理器也使用了类似的策略。
+
+​        这里有个简单版本的示例：（Thread.join()使用方面的更多细节参见$4.3.2）
+
+```java
+class Terminator {
+	// Try to kill; return true if known to be dead
+
+	static boolean terminate(Thread t, long maxWaitToDie) { 
+		
+		if (!t.isAlive()) return true;  // already dead
+		// phase 1 -- graceful cancellation
+		
+		t.interrupt();       
+		try { t.join(maxWaitToDie); } 
+		catch(InterruptedException e){} //  ignore 
+
+		if (!t.isAlive()) return true;  // success
+
+		// phase 2 -- trap all security checks
+
+		theSecurityMgr.denyAllChecksFor(t); // a made-up method
+		try { t.join(maxWaitToDie); } 
+		catch(InterruptedException ex) {} 
+
+		if (!t.isAlive()) return true; 
+
+		// phase 3 -- minimize damage
+
+		t.setPriority(Thread.MIN_PRIORITY);
+		return false;
+	}
+}
+```
+
+注意，这里的terminate()方法本身忽略了中断。这表明取消操作所做的这种策略选择一旦开始就必须继续。取消正在执行的取消操作，会给处理已经开始的终止相关的清理带来另一些问题。
+
+​        因不同JVM实现中Thread.isAlive()的行为不尽相同，当join因线程结束返回后，在线程完全死掉之前isAlive还有可能返回true。
