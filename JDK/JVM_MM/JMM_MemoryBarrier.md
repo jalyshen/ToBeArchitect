@@ -40,6 +40,104 @@
 
 ​        确保Store1的数据在被Load2和后续的Load指令读取之前对其他处理器可见。**StoreLoad屏障可以防止一个后续的load指令 不正确的使用了Store1的数据，而不是另一个处理器在相同内存位置写入一个新数据**。正因为如此，所以在下面所讨论的处理器为了在屏障前读取同样内存位置存过的数据，必须使用一个StoreLoad屏障将存储指令和后续的加载指令分开。Storeload屏障在几乎所有的现代多处理器中都需要使用，但通常它的开销也是最昂贵的。它们昂贵的部分原因是它们必须关闭通常的略过缓存直接从写缓冲区读取数据的机制。这可能通过让一个缓冲区进行充分刷新（flush）,以及其他延迟的方式来实现。
 
-
-
 ​        在下面讨论的所有处理器中，执行StoreLoad的指令也会同时获得其他三种屏障的效果。所以StoreLoad可以作为最通用的（但通常也是最耗性能）的一种Fence。(这是经验得出的结论，并不是必然)。反之不成立，为了达到StoreLoad的效果而组合使用其他屏障并不常见。
+​        下表显示这些屏障如何符合JSR-133排序规则：
+
+<table>
+	<tr>
+		<th>需要的屏障 </th>
+		<th colspan="4">第二步</th>
+	</tr>
+	<tr>
+		<td>第一步</td>
+		<td>Normal Load</td>
+		<td>Normal Store</td>
+		<td>Volatile <br> Load <br> MonitorEnter</td>
+		<td>Volatile <br> Store <br> MonitorExit</td>
+	</tr>
+	<tr>
+		<td>Normal Load</td>
+		<td></td>
+		<td></td>
+		<td></td>
+		<td>LoadStore</td>
+	</tr>
+	<tr>
+		<td>Normal Store</td>
+		<td></td>
+		<td></td>
+		<td></td>
+		<td>StoreStore</td>
+	</tr>
+	<tr>
+		<td>Volatile <br> Load <br> MonitorEnter</td>
+		<td>LoadLoad</td>
+		<td>LoadStore</td>
+		<td>LoadLoad</td>
+		<td>LoadStore</td>
+	</tr>
+	<tr>
+		<td>Volatile <br> Store <br> MonitorExit</td>
+		<td></td>
+		<td></td>
+		<td>StoreLoad</td>
+		<td>StoreStore</td>
+	</tr>
+</table>
+
+   另外，特殊的final字段规则在下列代码中需要一个StoreStore屏障：
+
+```java
+x.finalField = v; StoreStore; sharedRef = x;
+```
+
+如下例子解释如何放置屏障：
+
+```java
+class X {
+	int a, b;
+	volatile int v, u;
+
+	void f() {
+		int i, j;
+
+		i = a;// load a
+		j = b;// load b
+		i = v;// load v
+		// LoadLoad
+		j = u;// load u
+		// LoadStore
+		a = i;// store a
+		b = j;// store b
+		// StoreStore
+		v = i;// store v
+		// StoreStore
+		u = j;// store u
+		// StoreLoad
+		i = u;// load u
+		// LoadLoad
+		// LoadStore
+		j = b;// load b
+		a = i;// store a
+	}
+}
+```
+
+## 数据依赖和屏障
+
+​        一些处理器为了保证依赖指令的交互次序需要使用LoadlLoad和LoadStore屏障。在一些（大部分）处理器中，一个load指令或者一个依赖于之前加载值的store指令被处理器排序，并不需要一个显式的屏障。这通常发生于两种情况：
+
+1. 间接取值（indirection）：
+
+```java
+Load x；Load x.field
+```
+
+2. 条件控制（Control）
+
+```java
+Load x; if (predicate(x)) Load or Store y;
+```
+
+但特别的是不遵循间接排序的处理器，需要为final字段设置屏障，使它能通过共享引用访问最初的引用。
+
