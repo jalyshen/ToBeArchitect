@@ -262,3 +262,338 @@ The animal didn't cross the street because it was too tired
 
 ![Self-Attention](./images/bert_introduct/Self-Attention.png)
 
+​        接下来我们看下详细的处理过程。
+
+1. 首先，self-attention会计算出三个新的向量，在论文中，向量的维度是512维，我们把这三个向量分别称为Query、Key、Value，这三个向量是用embedding向量与一个矩阵相乘得到的结果，这个矩阵是随机初始化的，维度为（64，512）注意第二个维度需要和embedding的维度一样，其值在BP的过程中会一直进行更新，得到的这三个向量的维度是64低于embedding维度的。
+
+   ![Self-Attention-step-1](./images/bert_introduct/Self-Attention-setup-1.png)
+
+   那么Query、Key、Value这三个向量又是什么呢？这三个向量对于attention来说很重要，当你理解了下文后，你将会明白这三个向量扮演者什么的角色。
+
+2. 计算self-attention的分数值，该分数值决定了当我们在某个位置encode一个词时，对输入句子的其他部分的关注程度。这个分数值的计算方法是Query与Key做点乘，以下图为例，首先我们需要针对Thinking这个词，计算出其他词对于该词的一个分数值，首先是针对于自己本身即q1·k1，然后是针对于第二个词即q1·k2
+
+   ![Self-Attention-step-2](./images/bert_introduct/Self-Attention-setup-2.png)
+
+3. 接下来，把点成的结果除以一个常数，这里我们除以8，这个值一般是采用上文提到的矩阵的第一个维度的开方即64的开方8，当然也可以选择其他的值，然后把得到的结果做一个softmax的计算。得到的结果即是每个词对于当前位置的词的相关性大小，当然，当前位置的词相关性肯定会会很大
+
+   ![self-attention-step-3](./images/bert_introduct/Self-Attention-setup-3.png)
+
+4. 下一步就是把Value和softmax得到的值进行相乘，并相加，得到的结果即是self-attetion在当前节点的值
+
+   ![self-attention-step-4](./images/bert_introduct/Self-Attention-setup-4.png)
+
+   在实际的应用场景，为了提高计算速度，我们采用的是矩阵的方式，直接计算出Query, Key, Value的矩阵，然后把embedding的值与三个矩阵直接相乘，把得到的新矩阵Q与K相乘，乘以一个常数，做softmax操作，最后乘上V矩阵
+
+   ![self-attention-step-5](./images/bert_introduct/Self-Attention-setup-5.png)
+
+   ![self-attention-step-6](./images/bert_introduct/Self-Attention-setup-6.png)
+
+   这种通过 query 和 key 的相似性程度来确定 value 的权重分布的方法被称为scaled dot-product attention。其实scaled dot-Product attention就是我们常用的使用点积进行相似度计算的attention，只是多除了一个（为K的维度）起到调节作用，使得内积不至于太大。
+
+![self-attention-step-7](./images/bert_introduct/Self-Attention-setup-7.png)
+
+#### Multi-Headed Attention
+
+​        这篇论文更厉害的地方是给self-attention加入了另外一个机制，被称为“multi-headed” attention，该机制理解起来很简单，就是说不仅仅只初始化一组Q、K、V的矩阵，而是初始化多组，tranformer是使用了8组，所以最后得到的结果是8个矩阵。
+
+![multi-head-attention-1](./images/bert_introduct/multi-head-attention-1.png)
+
+![multi-head-attention-2](./images/bert_introduct/multi-head-attention-2.png)
+
+​        这给我们留下了一个小的挑战，前馈神经网络没法输入8个矩阵呀，这该怎么办呢？所以我们需要一种方式，把8个矩阵降为1个，首先，我们把8个矩阵连在一起，这样会得到一个大的矩阵，再随机初始化一个矩阵和这个组合好的矩阵相乘，最后得到一个最终的矩阵。
+
+![multi-head-attention-3](./images/bert_introduct/multi-head-attention-3.png)
+
+这就是multi-headed attention的全部流程了，这里其实已经有很多矩阵了，我们把所有的矩阵放到一张图内看一下总体的流程。
+
+![multi-head-attention-4](./images/bert_introduct/multi-head-attention-4.png)
+
+​        多头attention（Multi-head attention）整个过程可以简述为：Query，Key，Value首先进过一个线性变换，然后输入到放缩点积attention（注意这里要做h次，其实也就是所谓的多头，每一次算一个头，而且每次Q，K，V进行线性变换的参数W是不一样的），然后将h次的放缩点积attention结果进行拼接，再进行一次线性变换得到的值作为多头attention的结果。可以看到，google提出来的多头attention的不同之处在于进行了h次计算而不仅仅算一次，论文中说到这样的好处是可以允许模型在不同的表示子空间里学习到相关的信息，后面还会根据attention可视化来验证。
+
+![multi-head-attention-5](./images/bert_introduct/multi-head-attention-5.png)
+
+​        那么在整个模型中，是如何使用attention的呢？如下图，首先在编码器到解码器的地方使用了多头attention进行连接，K，V，Q分别是编码器的层输出（这里K=V）和解码器中都头attention的输入。其实就和主流的机器翻译模型中的attention一样，利用解码器和编码器attention来进行翻译对齐。然后在编码器和解码器中都使用了多头自注意力self-attention来学习文本的表示。Self-attention即K=V=Q，例如输入一个句子，那么里面的每个词都要和该句子中的所有词进行attention计算。目的是学习句子内部的词依赖关系，捕获句子的内部结构。
+
+![multi-head-attention-6](./images/bert_introduct/multi-head-attention-6.png)
+
+​        对于使用自注意力机制的原因，论文中提到主要从三个方面考虑（每一层的复杂度，是否可以并行，长距离依赖学习），并给出了和RNN，CNN计算复杂度的比较。可以看到，如果输入序列n小于表示维度d的话，每一层的时间复杂度self-attention是比较有优势的。当n比较大时，作者也给出了一种解决方案self-attention（restricted）即每个词不是和所有词计算attention，而是只与限制的r个词去计算attention。在并行方面，多头attention和CNN一样不依赖于前一时刻的计算，可以很好的并行，优于RNN。在长距离依赖上，由于self-attention是每个词和所有词都要计算attention，所以不管他们中间有多长距离，最大的路径长度也都只是1。可以捕获长距离依赖关系。
+
+![multi-head-attention-7](./images/bert_introduct/multi-head-attention-7.png)
+
+​        现在我们已经接触了attention的header，让我们重新审视我们之前的例子，看看例句中的“it”这个单词在不同的attention header情况下会有怎样不同的关注点（这里不同颜色代表attention不同头的结果，颜色越深attention值越大）
+
+![multi-head-attention-8](./images/bert_introduct/multi-head-attention-8.png)
+
+当我们对“it”这个词进行编码时，一个注意力的焦点主要集中在“animal”上，而另一个注意力集中在“tired”（两个heads）
+但是，如果我们将所有注意力添加到图片中，可能有点难理解：
+
+![multi-head-attention-9](./images/bert_introduct/multi-head-attention-9.png)
+
+#### Positional Encoding
+
+​        到目前为止，transformer模型中还缺少一种解释输入序列中单词顺序的方法。为了处理这个问题，transformer给encoder层和decoder层的输入添加了一个额外的向量Positional Encoding，维度和embedding的维度一样，这个向量采用了一种很独特的方法来让模型学习到这个值，这个向量能决定当前词的位置，或者说在一个句子中不同的词之间的距离。这个位置向量的具体计算方法有很多种，论文中的计算方法如下：
+$$
+PE(pos, 2i) = sin(pos/10000^{2i}/d_model) \\
+PE(pos, 2i+1) = cos(pos/10000^{2i}/d_model)
+$$
+
+
+其中pos是指当前词在句子中的位置，i是指向量中每个值的index，可以看出，在偶数位置，使用正弦编码，在奇数位置，使用余弦编码。最后把这个Positional Encoding与embedding的值相加，作为输入送到下一层。
+
+![Positional_Encoding](./images/bert_introduct/Positional_Encoding.png)
+
+为了让模型捕捉到单词的顺序信息，我们添加位置编码向量信息（POSITIONAL ENCODING），位置编码向量不需要训练，它有一个规则的产生方式（上图公式）。
+
+​        如果我们的嵌入维度为4，那么实际上的位置编码就如下图所示：
+
+![Positional_Encoding-2](./images/bert_introduct/Positional_Encoding-2.png)
+
+​        那么生成位置向量需要遵循怎样的规则呢？
+
+​        观察下面的图形，每一行都代表着对一个矢量的位置编码。因此第一行就是我们输入序列中第一个字的嵌入向量，每行都包含512个值，每个值介于1和-1之间。我们用颜色来表示1，-1之间的值，这样方便可视化的方式表现出来：
+
+![Positional_Encoding-3](./images/bert_introduct/Positional_Encoding-3.png)
+
+这是一个20个字（行）的（512）列位置编码示例。你会发现它咋中心位置被分为了2半，这是因为左半部分的值是一由一个正弦函数生成的，而右半部分是由另一个函数（余弦）生成。然后将它们连接起来形成每个位置编码矢量。
+
+#### Layer normalization
+
+​        在transformer中，每一个子层（self-attetion，ffnn）之后都会接一个残差模块，并且有一个Layer normalization
+
+![Layer-normalization](./images/bert_introduct/Layer-normalization.png)
+
+在进一步探索其内部计算方式，我们可以将上面图层可视化为下图：
+
+![Layer-normalization-2](./images/bert_introduct/Layer-normalization-2.png)
+
+残差模块相信大家都很清楚了，这里不再讲解，主要讲解下Layer normalization。Normalization有很多种，但是它们都有一个共同的目的，那就是把输入转化成均值为0方差为1的数据。我们在把数据送入激活函数之前进行normalization（归一化），因为我们不希望输入数据落在激活函数的饱和区。
+
+​        说到 normalization，那就肯定得提到 Batch Normalization。BN的主要思想就是：在每一层的每一批数据上进行归一化。我们可能会对输入数据进行归一化，但是经过该网络层的作用后，我们的数据已经不再是归一化的了。随着这种情况的发展，数据的偏差越来越大，我的反向传播需要考虑到这些大的偏差，这就迫使我们只能使用较小的学习率来防止梯度消失或者梯度爆炸。
+
+​        BN的具体做法就是对每一小批数据，在批这个方向上做归一化。如下图所示：
+
+![BN-1](./images/bert_introduct/BN-1.png)
+
+可以看到，右半边求均值是沿着数据 batch_size的方向进行的，其计算公式如下：
+$$
+BN(x_i) = \alpha \times \frac{x_i - \mu}{\sqrt{\sigma_B^2 + \epsilon}} + \beta
+$$
+​        那么什么是 Layer normalization 呢？它也是归一化数据的一种方式，不过 LN 是在每一个样本上计算均值和方差，而不是BN那种在批方向计算均值和方差！
+
+![LN-1](./images/bert_introduct/LN-1.png)
+
+LN的公式为：
+$$
+LN(x_i) = \alpha \times \frac{x_i - \mu L}{\sqrt{\sigma_B^2 + \epsilon}} + \beta
+$$
+​        到这里为止就是全部encoders的内容了，如果把两个encoders叠加在一起就是这样的结构，在self-attention需要强调的最后一点是其采用了残差网络中的short-cut结构，目的是解决深度学习中的退化问题。
+
+![decode-layer](./images/bert_introduct/decode-layer.png)
+
+![transformer-detail](./images/bert_introduct/transformer-detail.png)
+
+​        上图是transformer的一个详细结构，相比本文一开始结束的结构图会更详细些，接下来，我们会按照这个结构图讲解下decoder部分。
+
+​        可以看到decoder部分其实和encoder部分大同小异，不过在最下面额外多了一个masked mutil-head attetion，这里的mask也是transformer一个很关键的技术，我们一起来看一下。
+
+#### Mask
+
+​        mask 表示掩码，它对某些值进行掩盖，使其在参数更新时不产生效果。Transformer 模型里面涉及两种 mask，分别是 padding mask 和 sequence mask。
+
+​        其中，padding mask 在所有的 scaled dot-product attention 里面都需要用到，而 sequence mask 只有在 decoder 的 self-attention 里面用到。
+
+#### Padding Mask
+
+​        什么是 padding mask 呢？因为每个批次输入序列长度是不一样的也就是说，我们要对输入序列进行对齐。具体来说，就是给在较短的序列后面填充 0。但是如果输入的序列太长，则是截取左边的内容，把多余的直接舍弃。因为这些填充的位置，其实是没什么意义的，所以我们的attention机制不应该把注意力放在这些位置上，所以我们需要进行一些处理。
+
+​        具体的做法是，把这些位置的值加上一个非常大的负数(负无穷)，这样的话，经过 softmax，这些位置的概率就会接近0！
+
+​        而我们的 padding mask 实际上是一个张量，每个值都是一个Boolean，值为 false 的地方就是我们要进行处理的地方。
+
+
+
+#### Sequence mask
+
+​        文章前面也提到，sequence mask 是为了使得 decoder 不能看见未来的信息。也就是对于一个序列，在 time_step 为 t 的时刻，我们的解码输出应该只能依赖于 t 时刻之前的输出，而不能依赖 t 之后的输出。因此我们需要想一个办法，把 t 之后的信息给隐藏起来。
+
+​        那么具体怎么做呢？也很简单：产生一个上三角矩阵，上三角的值全为0。把这个矩阵作用在每一个序列上，就可以达到我们的目的。
+
+​        对于 decoder 的 self-attention，里面使用到的 scaled dot-product attention，同时需要padding mask 和 sequence mask 作为 attn_mask，具体实现就是两个mask相加作为attn_mask。
+​        其他情况，attn_mask 一律等于 padding mask。
+​        编码器通过处理输入序列启动。然后将顶部编码器的输出转换为一组注意向量k和v。每个解码器将在其“encoder-decoder attention”层中使用这些注意向量，这有助于解码器将注意力集中在输入序列中的适当位置：
+
+![sequence-mask](./images/bert_introduct/sequence-mask.gif)
+
+完成编码阶段后，我们开始解码阶段。解码阶段的每个步骤从输出序列（本例中为英语翻译句）输出一个元素。
+以下步骤重复此过程，一直到达到表示解码器已完成输出的符号。每一步的输出在下一个时间步被送入底部解码器，解码器像就像我们对编码器输入所做操作那样，我们将位置编码嵌入并添加到这些解码器输入中，以表示每个字的位置。
+
+![sequence-mask-2](./images/bert_introduct/sequence-mask-2.gif)
+
+#### 输出层
+
+​         当decoder层全部执行完毕后，怎么把得到的向量映射为我们需要的词呢，很简单，只需要在结尾再添加一个全连接层和softmax层，假如我们的词典是1w个词，那最终softmax会输入1w个词的概率，概率值最大的对应的词就是我们最终的结果
+
+![Output-layer](./images/bert_introduct/Output-layer.png)
+
+
+
+## BERT原理详解
+
+​         从创新的角度来看，BERT其实并没有过多的结构方面的创新点，其和GPT一样均是采用的transformer的结构，相对于GPT来说，其是双向结构的，而GPT是单向的，如下图所示:
+
+![BERT-GPT](./images/bert_introduct/BERT-GPT.png)
+
+* elmo：将上下文当作特征，但是无监督的语料和我们真实的语料还是有区别的，不一定的符合我们特定的任务，是一种双向的特征提取。
+
+* openai gpt就做了一个改进，也是通过transformer学习出来一个语言模型，不是固定的，通过任务 finetuning,用transfomer代替elmo的lstm。
+  openai gpt其实就是缺少了encoder的transformer。当然也没了encoder与decoder之间的attention。
+
+* openAI gpt虽然可以进行fine-tuning,但是有些特殊任务与pretraining输入有出入，单个句子与两个句子不一致的情况，很难解决，还有就是decoder只能看到前面的信息。
+  其次bert在多方面的nlp任务变现来看效果都较好，具备较强的泛化能力，对于特定的任务只需要添加一个输出层来进行fine-tuning即可。
+
+#### 结构
+
+​        先看下bert的内部结构，官网最开始提供了两个版本，L表示的是transformer的层数，H表示输出的维度，A表示mutil-head attention的个数：
+$$
+BERT_{BASE}: L = 12, H = 768, A = 12, TotalParameters = 110M \\
+BERT_{LARGE}: L = 24, H = 1024, A = 16, TotalParameters = 340M
+$$
+如今已经增加了多个模型，中文是其中唯一一个非英语的模型。
+
+* BETT-Base， Uncased：12-layer， 768-hidden，12-heads，110M parameters
+* BETT-Large， Uncased：24-layer， 1024-hidden，16-heads，340M parameters
+* BETT-Base， Cased：12-layer， 768-hidden，12-heads，110M parameters
+* BETT-Large， Cased：24-layer， 1024-hidden，16-heads，340M parameters
+* BETT-Base， Multilingual Cased (New, recommended)：104 languages, 12-layer， 768-hidden，12-heads，110M parameters
+* BETT-Base， Multilingual Uncased (Orig,  not recommended) (Not recommended, use Multilingual Cased instead)：102 languages, 12-layer， 768-hidden，12-heads，110M parameters
+* BETT-Base， Chinese：Chinese Simplified and Traditional, 12-layer， 768-hidden，12-heads，110M parameters
+
+​        从模型的层数来说其实已经很大了，但是由于transformer的残差（residual）模块，层数并不会引起梯度消失等问题，但是并不代表层数越多效果越好，有论点认为低层偏向于语法特征学习，高层偏向于语义特征学习。
+
+
+
+## 预训练模型
+
+​        首先我们要了解一下什么是预训练模型，举个例子，假设我们有大量的维基百科数据，那么我们可以用这部分巨大的数据来训练一个泛化能力很强的模型，当我们需要在特定场景使用时，例如做文本相似度计算，那么，只需要简单的修改一些输出层，再用我们自己的数据进行一个增量训练，对权重进行一个轻微的调整。
+
+​        预训练的好处在于在特定场景使用时不需要用大量的语料来进行训练，节约时间效率高效，bert就是这样的一个泛化能力较强的预训练模型。
+
+### BERT的预训练过程
+
+​        接下来我们看看BERT的预训练过程，BERT的预训练阶段包括两个任务，一个是Masked Language Model，还有一个是Next Sentence Prediction。
+
+#### Masked Language Model
+
+​        MLM可以理解为完形填空，作者会随机mask每一个句子中15%的词，用其上下文来做预测，例如：my dog is hairy → my dog is [MASK]
+
+​        此处将hairy进行了mask处理，然后采用非监督学习的方法预测mask位置的词是什么，但是该方法有一个问题，因为是mask15%的词，其数量已经很高了，这样就会导致某些词在fine-tuning阶段从未见过，为了解决这个问题，作者做了如下的处理：
+
+* 80%的时间是采用[mask]，my dog is hairy → my dog is [MASK]
+
+* 10%的时间是随机取一个词来代替mask的词，my dog is hairy -> my dog is apple
+
+* 10%的时间保持不变，my dog is hairy -> my dog is hairy
+
+​        那么为啥要以一定的概率使用随机词呢？这是因为transformer要保持对每个输入token分布式的表征，否则Transformer很可能会记住这个[MASK]就是"hairy"。至于使用随机词带来的负面影响，文章中解释说,所有其他的token(即非"hairy"的token)共享15%*10% = 1.5%的概率，其影响是可以忽略不计的。Transformer全局的可视，又增加了信息的获取，但是不让模型获取全量信息。
+
+​    注意：
+
+* 有参数dupe_factor决定数据duplicate的次数。
+* 其中，create_instance_from_document函数，是构造了一个sentence-pair的样本。对每一句，先生成[CLS]+A+[SEP]+B+[SEP]，有长（0.9）有短（0.1），再加上mask，然后做成样本类object。
+* create_masked_lm_predictions函数返回的tokens是已经被遮挡词替换之后的tokens
+* masked_lm_labels则是遮挡词对应位置真实的label
+
+#### Next Sentence Prediction
+
+​        选择一些句子对A与B，其中50%的数据B是A的下一条句子，剩余50%的数据B是语料库中随机选择的，学习其中的相关性，添加这样的预训练的目的是目前很多NLP的任务比如QA和NLI都需要理解两个句子之间的关系，从而能让预训练的模型更好的适应这样的任务。
+​        个人理解：
+
+​        Bert先是用Mask来提高视野范围的信息获取量，增加duplicate再随机Mask，这样跟RNN类方法依次训练预测没什么区别了除了mask不同位置外；
+
+​        全局视野极大地降低了学习的难度，然后再用A+B/C来作为样本，这样每条样本都有50%的概率看到一半左右的噪声；
+
+​        但直接学习Mask A+B/C是没法学习的，因为不知道哪些是噪声，所以又加上next_sentence预测任务，与MLM同时进行训练，这样用next来辅助模型对噪声/非噪声的辨识，用MLM来完成语义的大部分的学习。
+
+![NSP](./images/bert_introduct/NSP.png)
+
+
+
+#### 输入
+
+​        bert的输入可以是单一的一个句子或者是句子对，实际的输入值是segment embedding与position embedding相加，具体的操作流程可参考上面的transformer讲解。
+
+​        BERT的输入词向量是三个向量之和：
+
+* Token Embedding：WordPiece tokenization subword词向量。
+* Segment Embedding：表明这个词属于哪个句子（NSP需要两个句子）。
+* Position Embedding：学习出来的embedding向量。这与Transformer不同，Transformer中是预先设定好的值。
+  
+
+![input](./images/bert_introduct/Input.png)
+
+#### 总结
+
+![Summary](./images/bert_introduct/Summary.png)
+
+​        BERT的去除实验表明，双向LM和NSP带了的提升最大。
+
+![Effect_Pre-TrainingTask](./images/bert_introduct/Effect_Pre-TrainingTask.jpg)
+
+​        另一个结论是，增加模型参数数量可以提升模型效果。
+
+![Effect_Model_Size](./images/bert_introduct/Effect_Model_Size.jpg)
+
+​        BERT预训练模型的输出结果，无非就是一个或多个向量。下游任务可以通过精调（改变预训练模型参数）或者特征抽取（不改变预训练模型参数，只是把预训练模型的输出作为特征输入到下游任务）两种方式进行使用。BERT原论文使用了精调方式，但也尝试了特征抽取方式的效果，比如在NER任务上，最好的特征抽取方式只比精调差一点点。但特征抽取方式的好处可以预先计算好所需的向量，存下来就可重复使用，极大提升下游任务模型训练的速度。
+
+![FeatureExtention](./images/bert_introduct/FeatureExtention.jpg)
+
+​        后来也有其他人针对ELMo和BERT比较了这两种使用方式的精度差异。下面列出基本结论：
+
+![Result](./images/bert_introduct/Result.jpg)
+
+![Result-2](./images/bert_introduct/Result-2.jpg)
+
+**总结下BERT的主要贡献**：
+
+* 引入了Masked LM，使用双向LM做模型预训练。
+* 为预训练引入了新目标NSP，它可以学习句子与句子间的关系。
+* 进一步验证了更大的模型效果更好： 12 --> 24 层。
+* 为下游任务引入了很通用的求解框架，不再为任务做模型定制。
+* 刷新了多项NLP任务的记录，引爆了NLP无监督预训练技术。
+
+​        BERT是谷歌团队糅合目前已有的NLP知识集大成者，刷新11条赛道彰显了无与伦比的实力，且极容易被用于多种NLP任务。宛若一束烟花点亮在所有NLP从业者心中。更为可贵的是谷歌选择了开源这些，让所有从业者看到了在各行各业落地的更多可能性。
+
+
+
+### BERT优点
+
+* Transformer Encoder因为有Self-attention机制，因此BERT自带双向功能
+* 因为双向功能以及多层Self-attention机制的影响，使得BERT必须使用Cloze版的语言模型Masked-LM来完成token级别的预训练
+* 为了获取比词更高级别的句子级别的语义表征，BERT加入了Next Sentence Prediction来和Masked-LM一起做联合训练
+* 为了适配多任务下的迁移学习，BERT设计了更通用的输入层和输出层
+* 微调成本小
+
+### BERT缺点
+
+* task1的随机遮挡策略略显粗犷，推荐阅读《Data Nosing As Smoothing In Neural Network Language Models》
+* [MASK]标记在实际预测中不会出现，训练时用过多[MASK]影响模型表现;
+* 每个batch只有15%的token被预测，所以BERT收敛得比left-to-right模型要慢（它们会预测每个token）
+* BERT对硬件资源的消耗巨大（大模型需要16个tpu，历时四天；更大的模型需要64个tpu，历时四天。
+  
+
+## BERT适用场景
+
+​        第一，如果NLP任务偏向在语言本身中就包含答案，而不特别依赖文本外的其它特征，往往应用Bert能够极大提升应用效果。典型的任务比如QA和阅读理解，正确答案更偏向对语言的理解程度，理解能力越强，解决得越好，不太依赖语言之外的一些判断因素，所以效果提升就特别明显。反过来说，对于某些任务，除了文本类特征外，其它特征也很关键，比如搜索的用户行为／链接分析／内容质量等也非常重要，所以Bert的优势可能就不太容易发挥出来。再比如，推荐系统也是类似的道理，Bert可能只能对于文本内容编码有帮助，其它的用户行为类特征，不太容易融入Bert中。
+
+​        第二，Bert特别适合解决句子或者段落的匹配类任务。就是说，Bert特别适合用来解决判断句子关系类问题，这是相对单文本分类任务和序列标注等其它典型NLP任务来说的，很多实验结果表明了这一点。而其中的原因，我觉得很可能主要有两个，一个原因是：很可能是因为Bert在预训练阶段增加了Next Sentence Prediction任务，所以能够在预训练阶段学会一些句间关系的知识，而如果下游任务正好涉及到句间关系判断，就特别吻合Bert本身的长处，于是效果就特别明显。第二个可能的原因是：因为Self Attention机制自带句子A中单词和句子B中任意单词的Attention效果，而这种细粒度的匹配对于句子匹配类的任务尤其重要，所以Transformer的本质特性也决定了它特别适合解决这类任务。
+
+​        从上面这个Bert的擅长处理句间关系类任务的特性，我们可以继续推理出以下观点：
+
+既然预训练阶段增加了Next Sentence Prediction任务，就能对下游类似性质任务有较好促进作用，那么是否可以继续在预训练阶段加入其它的新的辅助任务？而这个辅助任务如果具备一定通用性，可能会对一类的下游任务效果有直接促进作用。这也是一个很有意思的探索方向，当然，这种方向因为要动Bert的第一个预训练阶段，所以属于NLP届土豪们的工作范畴，穷人们还是散退、旁观、鼓掌、叫好为妙。
+
+​        第三，Bert的适用场景，与NLP任务对深层语义特征的需求程度有关。感觉越是需要深层语义特征的任务，越适合利用Bert来解决；而对有些NLP任务来说，浅层的特征即可解决问题，典型的浅层特征性任务比如分词，POS词性标注，NER，文本分类等任务，这种类型的任务，只需要较短的上下文，以及浅层的非语义的特征，貌似就可以较好地解决问题，所以Bert能够发挥作用的余地就不太大，有点杀鸡用牛刀，有力使不出来的感觉。
+
+​        这很可能是因为Transformer层深比较深，所以可以逐层捕获不同层级不同深度的特征。于是，对于需要语义特征的问题和任务，Bert这种深度捕获各种特征的能力越容易发挥出来，而浅层的任务，比如分词／文本分类这种任务，也许传统方法就能解决得比较好，因为任务特性决定了，要解决好它，不太需要深层特征。
+
+​        第四，Bert比较适合解决输入长度不太长的NLP任务，而输入比较长的任务，典型的比如文档级别的任务，Bert解决起来可能就不太好。主要原因在于：Transformer的self attention机制因为要对任意两个单词做attention计算，所以时间复杂度是n平方，n是输入的长度。如果输入长度比较长，Transformer的训练和推理速度掉得比较厉害，于是，这点约束了Bert的输入长度不能太长。所以对于输入长一些的文档级别的任务，Bert就不容易解决好。结论是：Bert更适合解决句子级别或者段落级别的NLP任务。
+
