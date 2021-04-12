@@ -30,3 +30,4 @@ IK分词器，是针对ES的一个插件。基于词库的分词器。
 * AnalyzeContext：分词过程中，用来存储一些零时变量的对象
 
 ![IK_Analyzer_Segmenter](./images/IK_Analyzer/IK_Analyzer_Segmenter.png)
+
