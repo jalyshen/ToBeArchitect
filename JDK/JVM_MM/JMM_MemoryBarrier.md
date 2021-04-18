@@ -139,5 +139,134 @@ Load x；Load x.field
 Load x; if (predicate(x)) Load or Store y;
 ```
 
-但特别的是不遵循间接排序的处理器，需要为final字段设置屏障，使它能通过共享引用访问最初的引用。
+​        但特别的是不遵循间接排序的处理器，需要为final字段设置屏障，使它能通过共享引用访问最初的引用。
 
+```java
+x = sharedRef; … ; LoadLoad; i = x.finalField;
+```
+
+​        相反的，如下讨论，确定遵循数据依赖的处理器，提供了几个优化掉LoadLoad和LoadStore屏障指令的机会。（尽管如此，在任何处理器上，对于StoreLoad屏障不会自动清除依赖关系）。
+
+### 与原子指令交互
+
+​        屏障在不同处理器上还需要与MonitorEnter和MonitorExit实现交互。锁或者解锁，通常必须使用原子条件更新操作 CompareAndSwap(CAS) 指令或者 LoadLinked/StoreConditional (LL/SC) ，就如执行一个 volatile store 之后紧跟 volatile load 的语义一样。 CAS 或者 LL/SC 能够满足最小功能，一些处理器提供其他的原子操作（如，一个无条件交换），这在某些时候它可以替代或者与原子条件更新操作结合使用。
+
+​        在所有处理器中，原子操作可以避免在正被读取/更新的内存位置进行写后读（read-after-write）（否则标准的循环直到成功的结构体（loop-until- success）没办法正常工作）。但处理器在是否为原子操作提供比隐式的 StoreLoad 更一般的屏障特性上表现不同。一些处理器上这些指令可以为 MornitorEnter/Exit 原生的生成屏障，其他的处理器中一部分或者全部屏障必须显式地指定。
+
+​        为了分清这些影响，必须把 Volatiles 和 Monitors 分开：
+
+<table>
+  <tr>
+    <th>需要的屏障</th>
+  	<th colspan=6>第二步</th>
+  </tr>
+  <tr>
+    <td>第一步</td>
+    <td>Normal Load</td>
+    <td>Normal Store</td>
+    <td>Volatile Load</td>
+    <td>Volatile Store</td>
+    <td>MonitorEnter</td>
+    <td>MonitorExit</td>
+  </tr>
+  <tr>
+    <td>Normal Load</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td>LoadStore</td>
+    <td></td>
+    <td>LoadStore</td>
+  </tr>
+  <tr>
+    <td>Normal Store</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td>StoreStore</td>
+    <td></td>
+    <td>StoreExit</td>
+  </tr>
+  <tr>
+    <td>Volatile Load</td>
+    <td>LoadLoad</td>
+    <td>LoadStore</td>
+    <td>LoadLoad</td>
+    <td>LoadStore</td>
+    <td>LoadEnter</td>
+    <td>LoadExit</td>
+  </tr>
+  <tr>
+    <td>Volatile Store</td>
+    <td></td>
+    <td></td>
+    <td>StoreLoad</td>
+    <td>StoreStore</td>
+    <td>StoreEnter</td>
+    <td>StoreExit</td>
+  </tr>
+  <tr>
+    <td>MonitorEnter</td>
+    <td>EnterLoad</td>
+    <td>EnterStore</td>
+    <td>EnterLoad</td>
+    <td>EnterStore</td>
+    <td>EnterEnter</td>
+    <td>EnterExit</td>
+  </tr>
+  <tr>
+    <td>MonitorExit</td>
+    <td></td>
+    <td></td>
+    <td>ExitLoad</td>
+    <td>ExitStore</td>
+    <td>ExitEnter</td>
+    <td>ExitExit</td>
+  </tr>
+</table>
+
+另外，特殊的 final 字段规则需要一个 StoreLoad 屏障。
+
+```
+x.finalField = v; StoreStore; sharedRef = x;
+```
+
+在这张表里， “Enter”与“Load”相同，“Exit”与“Store”相同，除非被子原子指令的使用和特性覆盖。特别是：
+
+* EnterLoad 在进入任何需要执行 Load 指令的同步块/方法时都需要。这与 LoadLoad 相同，除非在 MonitorEnter 时候使用了原子指令并且它本身提供一个至少有 LoadLoad 属性的屏障，如果是这种情况，相当于没有操作
+* StoreExit 在退出任何执行 Store 指定的同步方法块时候都需要。这与 StoreStore 一致，除非 MonitorExit 使用原子操作，并且提供了一个至少有 StoreStore 属性的屏障，如果是这种情况，相当于没有操作
+* ExitEnter 和 StoreLoad 一样，除非 MonitorExit 使用了原子指令，并且/或者 MonitorEnter 至少提供一种屏障，该屏障具有 StoreLoad 的属性，如果是这种情况，相当于没有操作
+
+​        在编译时不起作用或者导致处理器上不产生操作的指令比较特殊。例如，当没有交替的 Load 和 Store 指令时， EnterEnter 用于分离嵌套的 MonitorEnter。 下面例子说明如何使用这些指令类型：
+
+```java
+class X {
+	int a;
+	volatile int v;
+
+	void f() {
+		int i;
+		synchronized (this) { // enter EnterLoad EnterStore
+			i = a;// load a
+			a = i;// store a
+		}// LoadExit StoreExit exit ExitEnter
+
+		synchronized (this) {// enter ExitEnter
+			synchronized (this) {// enter
+			}// EnterExit exit
+		}// ExitExit exit ExitEnter ExitLoad
+
+		i = v;// load v
+
+		synchronized (this) {// LoadEnter enter
+		} // exit ExitEnter ExitStore
+
+		v = i; // store v
+		synchronized (this) { // StoreEnter enter
+		} // EnterExit exit
+	}
+
+}
+```
+
+​        Java层次的对原子条件更新的操作将在JDK1.5中发布（JSR-166），因此编译器需要发布相应的代码，综合使用上表中使用MonitorEnter和MonitorExit的方式，——从语义上说，有时在实践中，这些Java中的原子更新操作，就如同他们都被锁所包围一样。
