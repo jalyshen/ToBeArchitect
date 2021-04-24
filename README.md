@@ -42,3 +42,5 @@
 
 [区块链](./BlockChain/BlockChain_Index.md)
 
+[随机过程](./RandomProcess/Index.md)
+
