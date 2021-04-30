@@ -69,7 +69,7 @@ $$
 
 上面的推导过程会稍微麻烦一些，特意整理了一下，结合交叉熵损失函数，整理了一篇新的内容，看起来更直观一些：
 
-[交叉熵损失函数(Cross Entropy Error Function)与均方差损失函数(Mean Squared Error)](https://blog.csdn.net/bitcarmanlee/article/details/105619286)
+[交叉熵损失函数(Cross Entropy Error Function)与均方差损失函数(Mean Squared Error)](./CrossEntropy_and_MeanSquared.md)
 
 
 
