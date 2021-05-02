@@ -6,11 +6,11 @@
 
 ## 1. 什么是Sigmoid Function
 
-​        一提起 Sigmoid function可能大家的第一反应就是Logistic Regression。我们把一个sample扔进 $sigmoid$ 中，就可以输出一个probability，也就是是这个sample属于第一类或第二类的概率。
+​        一提起 Sigmoid Function 可能大家的第一反应就是Logistic Regression。我们把一个样本（sample）扔进 $sigmoid$ 中，就可以输出一个可能性（probability），也就是这个样本（sample）属于第一类或第二类的概率。
 
-​        还有像神经网络也有用到 $sigmoid$ ，不过在那里叫 activation function（激活函数）。
+​        还有像神经网络也有用到 $sigmoid$ ，不过在那里叫 Activation Function（激活函数）。
 
-​        Sigmoid function 形式如下：
+​        Sigmoid Function 形式如下：
 $$
 \sigma(z) = \frac{1}{1 + e^{-z}}
 $$
@@ -18,9 +18,9 @@ $$
 
 ## 2. Sigmoid的由来
 
-​        首先假设有两个类别（*Class*) : $C_1$ 和 $C_2$ ，并且给出一个样本Sample $x$，目标是：求 $x$ 属于 $C_1$ 的概率是多少。
+​        首先假设有两个类别（*Class*) : $C_1$ 和 $C_2$ ，并且给出一个样本(Sample) $x$，目标是：求 $x$ 属于 $C_1$ 的概率是多少。
 
-​        这个概率可以通过 **Naive Bayes** 很轻松的求得，就是下面（*公式 1*） :
+​        这个概率可以通过 **Naive Bayes** 很轻松的求得，贝叶斯公式就是下面（*公式 1*） :
 $$
 P(C_1 | x) = \frac{P(x|C_1)P(C_1)}{P(x)}
 $$
@@ -51,11 +51,11 @@ $$
 
 ## 3. 思考
 
-​        已经知道了Sigmoid函数的来龙去脉，那么现在的问题就是：sigmoid函数中，只有 $P(x|C_1)$ 和 $P(x|C_2)$ 不知道，干脆用 **Bayes** 是不是就可以直接计算出 $P(x|C_1)$ 了呢？$x$ 是某个样本，其中有多个feature，也就是说，$x$ 是一个向量（*vector*），那么这个 $P(x|C_1)$ 就是展开就是如下的形式：
+​        已经知道了Sigmoid函数的来龙去脉，那么现在的问题就是：$sigmoid$ 函数中，只有 $P(x|C_1)$ 和 $P(x|C_2)$ 不知道，干脆用 **Bayes** 是不是就可以直接计算出 $P(x|C_1)$ 了呢？$x$ 是某个样本，其中有多个feature，也就是说，$x$ 是一个向量（*vector*），那么这个 $P(x|C_1)$ 就是展开就是如下的形式：
 $$
 P(x|C_1) = P(x_1|C_1)P(x_2|C_1) \ldots P(k_1|C_1) \ldots
 $$
-但是 **Bayes** 有一个限制条件，就是所有的feature都 **必须是independent** 的，假如训练的sample中各个feature都是independent的话，那么Bayes会给一个很好的结果。但实际情况并非如此完美，各个feature之间不可能是independent的，所以bayes的结果非常大，建立的模型（model ）就不成功。
+但是 **Bayes** 有一个限制条件，就是所有的feature都 **必须是无依赖（independent）** 的。假如训练的样本（sample）中各个feature都是无依赖（independent）的话，那么Bayes会给一个很好的结果。但实际情况并非如此完美，各个feature之间不可能是完全无依赖（independent）的，所以Bayes的结果非常大，建立的模型（model ）就不成功。
 
 ## 4. 这个$z$ 应该长什么样
 
@@ -67,7 +67,7 @@ $$
 $$
 ln \frac{P(C_1)}{P(C_2)} = ln \frac{\frac{N_1}{N_1 + N_2}}{\frac{N_2}{N_1 + N_2}}  = ln \frac{N_1}{N_2}
 $$
-其中， $P(x|C_1)$ 和 $P(x|C_2)$ 都遵从 Guassian Probability Distribution：
+其中， $P(x|C_1)$ 和 $P(x|C_2)$ 都遵从高斯概率分布（ Guassian Probability Distribution）：
 $$
 P(x|C_1) = \frac{1}{2 \pi^{D/2}} \frac{1}{|\sum_1|^{1/2}} e^{-1/2(x- \mu_1)^T \sum_{1}^{-1}(x - \mu_1)} \\
 P(x|C_2) = \frac{1}{2 \pi^{D/2}} \frac{1}{|\sum_2|^{1/2}} e^{-1/2(x- \mu_2)^T \sum_{2}^{-1}(x - \mu_2)}
@@ -76,24 +76,24 @@ $$
 $$
 z = ln \frac{P(x|C_1)}{P(x|C_1)} + ln \frac{P(C_1)}{P(C_2)}
 $$
-第二项我们已经求出来了，下面我们把第一项Guassian Probability Distribution带入：
+第二项我们已经求出来了，下面我们把高斯概率分布（Guassian Probability Distribution）带入第一项，得到：
 $$
-ln \frac{P(C_1)}{P(C_2)} = ln \frac{\frac{1}{2 \pi^{D/2}} \frac{1}{|\sum_1|^{1/2}} e^{-1/2(x- \mu_1)^T \sum_{1}^{-1}(x - \mu_1)}} {\frac{1}{2 \pi^{D/2}} \frac{1}{|\sum_2|^{1/2}} e^{-1/2(x- \mu_2)^T \sum_{2}^{-1}(x - \mu_2)}}
+ln \frac{P(x|C_1)}{P(x|C_2)} = ln \frac{\frac{1}{2 \pi^{D/2}} \frac{1}{|\sum_1|^{1/2}} e^{-1/2(x- \mu_1)^T \sum_{1}^{-1}(x - \mu_1)}} {\frac{1}{2 \pi^{D/2}} \frac{1}{|\sum_2|^{1/2}} e^{-1/2(x- \mu_2)^T \sum_{2}^{-1}(x - \mu_2)}}
 $$
-乍一看，简直太复杂太恶心了 :)
-但是别慌，很多东西都能消掉的，来消一下。
-首先，上面分子分母中 $ \frac{P(C_1)}{P(C_2)}$可以消掉，就变成了：
+乍一看，简直太复杂了 :) 但是别慌，很多东西都能消掉的，来消一下。
+首先，上面分子分母中 $ \frac{1}{2\pi^{D/2}}$可以消掉，就变成了：
 $$
-ln \frac{P(C_1)}{P(C_2)} = ln \frac{\frac{1}{|\sum_1|^{1/2}} e^{-1/2(x- \mu_1)^T \sum_{1}^{-1}(x - \mu_1)}} {\frac{1}{|\sum_2|^{1/2}} e^{-1/2(x- \mu_2)^T \sum_{2}^{-1}(x - \mu_2)}}
+ln \frac{P(x|C_1)}{P(x|C_2)} = ln \frac{\frac{1}{|\sum_1|^{1/2}} e^{-1/2(x- \mu_1)^T \sum_{1}^{-1}(x - \mu_1)}} {\frac{1}{|\sum_2|^{1/2}} e^{-1/2(x- \mu_2)^T \sum_{2}^{-1}(x - \mu_2)}}
 $$
 然后是：
 $$
-ln \frac{P(C_1)}{P(C_2)} = ln \frac{|\sum_2|^{1/2}}{|\sum_1|^{1/2}} e^{-1/2[(x- \mu_1)^T \sum_{1}^{-1}(x - \mu_1) - (x- \mu_2)^T \sum_{2}^{-1}(x - \mu_2)]}
+ln \frac{P(x|C_1)}{P(x|C_2)} = ln \frac{|\sum_2|^{1/2}}{|\sum_1|^{1/2}} e^{-1/2[(x- \mu_1)^T \sum_{1}^{-1}(x - \mu_1) - (x- \mu_2)^T \sum_{2}^{-1}(x - \mu_2)]}
 $$
 接着：
 $$
-ln \frac{P(C_1)}{P(C_2)} = ln \frac{|\Sigma_{2}|^{1/2}}{|\Sigma_{1}|^{1/2}} - \frac{1}{2}[(x- \mu_1)^T \Sigma_{1}^{-1}(x - \mu_1) - (x- \mu_2)^T (\Sigma_{2})^{-1}(x - \mu_2)]
+ln \frac{P(x|C_1)}{P(x|C_2)} = ln \frac{|\Sigma_{2}|^{1/2}}{|\Sigma_{1}|^{1/2}} - \frac{1}{2}[(x- \mu_1)^T \Sigma_{1}^{-1}(x - \mu_1) - (x- \mu_2)^T (\Sigma_{2})^{-1}(x - \mu_2)]
 $$
+
 
 
 上面第二项 $\frac{1}{2}[(x- \mu_1)^T (\Sigma_{1})^{-1}(x - \mu_1) - (x- \mu_2)^T (\Sigma_{2})^{-1}(x - \mu_2)]$ ，中括号里面有两项，再把这两项里面的括号全部打开，打开的目的是为了后面的简化。
