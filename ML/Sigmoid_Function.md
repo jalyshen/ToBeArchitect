@@ -100,10 +100,21 @@ $$
 
 ​        先来看第一项：
 $$
-(x - \mu_1)^T(\Sigma_{1})^{-1}(x - \mu_1) 
-= x^T \Sigma_{1}^{-1}x - x^T \Sigma_1^{-1} \mu_1 - \mu_1^{T} \Sigma_1^{-1} x + \mu_1^{T} \Sigma^{-1} \mu_1 \\
+(x - \mu_1)^T(\Sigma_{1})^{-1}(x - \mu_1) \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ = x^T \Sigma_{1}^{-1}x - x^T \Sigma_1^{-1} \mu_1 - \mu_1^{T} \Sigma_1^{-1} x + \mu_1^{T} \Sigma_1^{-1} \mu_1 \\
 = x^T \Sigma_{1}^{-1}x -2 \mu_1^{T} \Sigma_1^{-1} x + \mu_1^{T} \Sigma_1^{-1} \mu_1
 $$
+此处，$- x^T \Sigma_1^{-1} \mu_1 - \mu_1^{T} \Sigma_1^{-1} x $  能够合并成 $-2 \mu_1^{T} \Sigma_1^{-1} x$ ，是因为这里计算使用的是“内积（或叫做点乘）”
+
+
+
+> ​        *为了便于理解，说明一下矩阵转置的运算规则：*
+>
+> * $(A^T)^T = A$
+> * $(A + B)^T = A^T + B^T$
+> * 对于任意**数**$r$ ，$(rA)^T = rA^T$
+> * $(AB)^T = B^TA^T$
+
 ​        第二项化简方法一样，把下角标换成2就行了：
 $$
 (x - \mu_2)^T(\Sigma_2)^{-1}(x - \mu_2)  \\
@@ -115,7 +126,7 @@ z = ln \frac{|\Sigma_{2}|^{1/2}}{|\Sigma_{1}|^{1/2}} - \frac{1}{2}[x^T \Sigma_{1
 $$
 仔细观察不难发现，上式中中括号里面第一项和第四项是可以消掉的。
 
-​        这里，可以认为 $\Sigma_1 = \Sigma_2 = \Sigma$ ，刚才一直没有解释 $\mu$ 和 $ \Sigma$ 是什么，现在简单说一下： $\mu$ 就是mean (均值) ，$\Sigma$ 就是 covairance （协方差），其中 $\mu$ 是向量 (Vector) ，$\Sigma$ 是个Matrix，具体什么形式，可以参考 Guassian 看看paper。
+​        这里，可以认为 $\Sigma_1 = \Sigma_2 = \Sigma$ ，刚才一直没有解释 $\mu$ 和 $ \Sigma$ 是什么，现在简单说一下： $\mu$ 就是mean (均值) ，$\Sigma$ 就是 covairance （协方差），其中 $\mu$ 是向量 (Vector) ，$\Sigma$ 是个矩阵(Matrix)，具体什么形式，可以参考 Guassian的论文 。
 
 ​        那么，为什么可以认为 $\Sigma_1 = \Sigma_2 = \Sigma$  呢？因为如果每个class（分类）都有自己的Covariance的话，那么Variance 会很大，参数的量一下子就上去了，参数一多，就容易 overfitting。 这么说的话， $z$ 里面的第一项 $ln = \frac{|\Sigma_{2}|^{1/2}}{|\Sigma_{1}|^{1/2}}$ 就是 $0$了。这样，就又可以简化公示了。
 
