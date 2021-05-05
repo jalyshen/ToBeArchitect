@@ -14,7 +14,7 @@
 $$
 \operatorname{Cov}(X, Y) \equiv C_{XY} \equiv E((X- \mu_x)(Y - \mu_y))
 $$
-假定，不知道潜在的概率分布，可以取 $n$ 个样本来计算：
+*这里 $E(x) = \mu$ 表示期望函数值*。假定，不知道潜在的概率分布，可以取 $n$ 个样本来计算：
 $$
 \operatorname{Cov}(X, Y) = \frac{1}{n} \sum_{i=1}^{n} (x_i - m_x)(y_i - m_y)
 $$
