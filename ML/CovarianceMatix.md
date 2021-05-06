@@ -27,11 +27,12 @@ $$
 y_n - m_y
 \end{bmatrix}
 $$
-由于变量都有**量纲**，如果消除各自量纲影响，将协方差除以两个变量的标准差，则可得相关系数：
+由于变量都有**量纲**，如果消除各自量纲影响，将协方差除以两个变量的**标准差**，则可得相关系数：
 $$
 \rho_{xy} \equiv \frac{E\left ((X - \mu_x)(Y - \mu_y) \right)}{\sigma_x \sigma_y } = \frac{Cov(X,Y)}{\sigma_x \sigma_y}
 $$
 
+其中，$\sigma_x, \sigma_y$ 分别是向量 $X, Y$ 的标准差。注：$\sigma_x = \sqrt{\frac{\sum_{i=1}^{n}(x-\bar{x})^2}{n-1}}$
 
 ## 二. 协方差矩阵
 
@@ -64,7 +65,29 @@ $$
 
 **多元高斯分布概率密度的推导**
 
-设多元高斯分布如下：均值向量为*μ，*协方差矩阵为Σ， 则有：
+设多元高斯分布如下：均值向量为 $\mu$ , 协方差矩阵为$\Sigma$， 则有：
+$$
+X \sim N(\mu, \Sigma) \\
+p(X) = \frac{1}{(2\pi)^{D/2}|\Sigma|^{1/2}} e^{-\frac{1}{2}(X-\mu)^T \Sigma_{}^{-1} (X - \mu)}
+$$
+与一元高斯分布对比，概率密度函数形式有所变化，这个变化是怎么来的呢？通过二元高斯分布来推导一下。
+
+对于二元高斯分布，设定：
+$$
+x = \begin{bmatrix}
+ x_1\\
+ x_2
+\end{bmatrix} \ \ \ \ \ \ \  
+\mu = \begin{bmatrix}
+ \mu_1\\
+ \mu_2
+\end{bmatrix} \ \ \ \ \ \ \  
+\Sigma = \begin{bmatrix}
+  \sigma_1^2& 0 \\
+  0& \sigma_2^2
+\end{bmatrix}
+$$
+现在推导两个变量的高斯分布的密度函数公式：
 $$
 
 $$
