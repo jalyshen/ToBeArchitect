@@ -41,10 +41,12 @@ $$
 实际上这个距离，就是所谓的**支持向量**到超平面的距离。
 
 根据以上定义，SVM模型的求解最大分割超平面问题可以表示为以下约束最优化问题：
-$$
-\max_{w,b} \gamma \\
-s.t. \ \ y_i(\frac{w}{\|w\|} \cdot x_i + \frac{b}{\|w\|}) \geq \gamma, i=1,2,\cdots,N
-$$
+
+$ \max_{w,b} (\gamma) \\
+s.t. \ \ y_i(\frac{w}{\|w\|} \cdot x_i + \frac{b}{\|w\|}) \geq \gamma, i=1,2,\cdots,N $
+
+
+
 将约束条件两边同时除以 $\gamma$，得到：
 $$
 y_i(\frac{w}{\|w\|\gamma} \cdot x_i + \frac{b}{\|w\|\gamma}) \geq 1
@@ -59,13 +61,46 @@ $$
 y_i (w \cdot x_i + b) \geq 1, i = 1,2,\cdots,N
 $$
 又因为最大化 $\gamma$，等价于最大化 $\frac{1}{\|w\|}$，也等价于最小化 $\frac{1}{2}\|w\|^2$ （$\frac{1}{2}$ 是为了后面求导以后形式简洁，不影响结果），因此SVM模型的求解最大分割超平面问题又可以表示为一下约束最优化问题：
-$$
-\min_{w,b} \frac{1}{2}\|w\|^2 \\
-s.t. \ \ \ y_i(w \cdot x_i + b) \geq, i = 1,2, \cdots,N
-$$
+
+$ \min_{w,b} (\frac{1}{2}\|w\|^2) \\ 
+s.t. \ \ \ y_i(w \cdot x_i + b) \geq, i = 1,2, \cdots,N $
+
+
+
 这是一个含有不等式约束的凸二次规划问题，可以对其使用拉格兰日乘子法得到其对偶问题(dual problem)。
 
 
+
+​        首先，将有约束的原始目标函数转换为无约束的新构造的拉格朗日目标函数：
+$$
+L(w,b,a) = \frac{1}{2}\|w\|^2 - \sum_{i=1}^{N}a_i(y_i(w \cdot x_i + b) - 1)
+$$
+其中 $a_i$ 为拉格朗日乘子，且 $a_i \geq 0$。现在，令：
+
+​        $\theta(w) = max_{a_i \geq 0} L(w,b,a) $
+
+* 当样本点不满足约束条件时，即在可行解区域外： 
+
+  $y_i(w \cdot x_i + b) < 1$ 
+
+  此时，将 $a_i$ 设置为无穷大，则 $\theta(w)$ 也为无穷大。
+
+* 当样本点满足约束条件时，即在可行解区域内：
+
+  $y_i(w \cdot x_i + b) \geq 1$
+
+  此时，$\theta(w)$ 为原函数本身。于是，将两种情况合并起来就可以得到新的目标函数：
+
+  $\theta(w) = \begin{cases}
+    \frac{1}{2} \|w\|^2,& x \in \text{ 可行区域 }\\
+    +\infty\ \ \ \ ,& x \in \text{ 不可行区域 }
+  \end{cases} $
+
+  于是原约束问题就等价于：
+
+  $ \min_{w,b} \theta(w) = min_{w,b} max_{a_i \geq 0} L(w,b,a) = p^*$
+
+* 
 
 ## 三. 非线形SVM算法原理
 
