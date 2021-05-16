@@ -55,9 +55,9 @@ $$
 ​        进一步对公式进行变化，可得：
 $$
 \begin{aligned}
-\frac{P(\mathrm{D} \mid \mathrm{R})}{P(\mathrm{D} \mid \mathrm{NR})}=\prod_{i: d_{i}=1} \frac{p_{i}}{s_{i}} \times\left(\prod_{i: d_{i}=1} \frac{1-s_{i}}{1-p_{i}} \times \prod_{i: d_{i}=1} \frac{1-p_{i}}{1-s_{i}}\right) \times \prod_{i: d_{i}=0} \frac{1-p_{i}}{1-s_{i}} \\
-=\left(\prod_{i: d_{i}=1} \frac{p_{i}}{s_{i}} \times \prod_{i: d_{i}=1} \frac{1-s_{i}}{1-p_{i}}\right) \times\left(\prod_{i: d_{i}=1} \frac{1-p_{i}}{1-s_{i}} \times \prod_{i: d_{i}=0} \frac{1-p_{i}}{1-s_{i}}\right) \\
-=\prod_{i: d_{i}=1} \frac{p_{i}\left(1-s_{i}\right)}{s_{i}\left(1-p_{i}\right)} \times \prod \frac{1-p_{i}}{1-s_{i}}
+\frac{P(\mathrm{D} \mid \mathrm{R})}{P(\mathrm{D} \mid \mathrm{NR})}= &\prod_{i: d_{i}=1} \frac{p_{i}}{s_{i}} \times\left(\prod_{i: d_{i}=1} \frac{1-s_{i}}{1-p_{i}} \times \prod_{i: d_{i}=1} \frac{1-p_{i}}{1-s_{i}}\right) \times \prod_{i: d_{i}=0} \frac{1-p_{i}}{1-s_{i}} \\
+=&\left(\prod_{i: d_{i}=1} \frac{p_{i}}{s_{i}} \times \prod_{i: d_{i}=1} \frac{1-s_{i}}{1-p_{i}}\right) \times\left(\prod_{i: d_{i}=1} \frac{1-p_{i}}{1-s_{i}} \times \prod_{i: d_{i}=0} \frac{1-p_{i}}{1-s_{i}}\right) \\
+=&\prod_{i: d_{i}=1} \frac{p_{i}\left(1-s_{i}\right)}{s_{i}\left(1-p_{i}\right)} \times \prod \frac{1-p_{i}}{1-s_{i}}
 \end{aligned}
 $$
 
@@ -83,10 +83,10 @@ $$
 > * $N$: 表示是文档集中总的文档数
 > * $R$: 表示与query相关的文档数
 > * $r_i$: 表示与query相关的文档中含有的第i个term文档个数
-> * $n_i$: 表示含有的第i个term文档总数
+> * $n_i$: 表示含有的第 $i$ 个term文档总数
 > * $0.5$: 是平滑因子，避免出现$log(0)$
 
-根据上表，可以计算出$$s_{i}$$ 和 $$p_{i}$$ 的概率估值，为了避免$$log(0)$$，对估值公式进行平滑操作，分子+0.5， 分母+1.0：
+根据上表，可以计算出$$s_{i}$$ 和 $$p_{i}$$ 的概率估值，为了避免$$log(0)$$，对估值公式进行平滑操作，分子 $+0.5$， 分母 $+1.0$：
 $$
 p_{i} = (r_{i} + 0.5) / (R + 1.0) \\
 s_{i} = (n_{i} - r_{i} + 0.5) / (N - R + 1.0)
@@ -96,7 +96,7 @@ $$
 \sum_{i: q_{i}=d_{i}=1} \log \frac{\left(r_{i}+0.5\right) /\left(R-r_{i}+0.5\right)}{\left(n_{i}-r_{i}+0.5\right) /\left((N-R)-\left(n_{i}-r_{i}\right)+0.5\right)}
 $$
 
-​        这个公式代表的含义是：对于同时出现在查询Q和文档D中的单词，累加每个单词的估值结果就是文档D和查询Q的相关性度量。
+​        这个公式代表的含义是：对于同时出现在查询Q和文档D中的单词，累加每个单词的估值结果就是***: 文档D和查询Q的相关性度量***。
 
 ​        在预先不知道哪些文档相关哪些文档不相关的情况下，可以使用固定值替代，这种情况下，该公式等价于向量空间模型（VSM）中的IDF因子，实际证明该模型的实际使用结果不好，但是它是BM25模型的基础。
 

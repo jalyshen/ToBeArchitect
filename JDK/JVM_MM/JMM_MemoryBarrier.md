@@ -1,4 +1,4 @@
-# 内存屏障
+# Java内存模型-内存屏障
 
 原文：http://ifeve.com/jmm-cookbook-mb/
 

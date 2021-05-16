@@ -1,4 +1,4 @@
-# 多处理器
+# Java内存模型-多处理器
 
 原文：http://ifeve.com/jmm-cookbook-mps/
 
