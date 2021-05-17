@@ -1,4 +1,4 @@
-# 高水位和Leader Epoch详解
+# Kafka详解(十): 高水位和Leader Epoch详解
 
 原文：https://blog.csdn.net/fedorafrog/article/details/104100235
 
