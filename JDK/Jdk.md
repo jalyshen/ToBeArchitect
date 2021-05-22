@@ -5,3 +5,7 @@
 Maven
 
 * [Maven知识体系图](./Maven/Knowledge_System.md)
+
+Java和面向对象
+
+* [面向对象特性](./Base/OO_Feature.md)
