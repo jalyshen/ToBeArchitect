@@ -48,7 +48,7 @@
 
 不论是单节点的事务，还是分布式事务，**都应该具备ACID**。
 
-分布式事务为了实现**ACID**，通常的实现方式采取**两端提交**方式，英文缩写为**2PC**（Two Phase Commitment Protocol）。
+分布式事务为了实现**ACID**，通常的实现方式采取**两段提交**方式，英文缩写为**2PC**（Two Phase Commitment Protocol）。
 
 2PC是分布式事务的基础协议。下面就来描述一下2PC。
 

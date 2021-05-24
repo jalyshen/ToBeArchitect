@@ -18,7 +18,7 @@ https://www.toutiao.com/a6888181072912187915/
 
 * 分布式锁
 
-  应用场景是在集群模式的多个相同服务，可能胡部署在多个不同的机器上，解决进程间安全问题，防止多进程同时操作一个变量或者数据库。解决的事多进程的并发问题。
+  应用场景是在集群模式的多个相同服务，可能胡部署在多个不同的机器上，解决进程间安全问题，防止多进程同时操作一个变量或者数据库。解决的是多进程的并发问题。
 
 * 事务
 
@@ -132,7 +132,7 @@ public boolean tryGetLock(Jedis jedis,String lockKey,int expireTime){
         SetParams setParams = new SetParams();
         setParams.nx().px(expireTime);
         long threadId = Thread.currentThread().getId();
-        String result = jedis.set(lockKey,            String.valueOf(threadId),setParams);
+        String result = jedis.set(lockKey,String.valueOf(threadId),setParams);
         if("1".equals(result)){
             return true;
         }
