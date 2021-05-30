@@ -128,9 +128,10 @@
 2. 为了事件的时间处理，给事件添加“水印”（watermark）信息
 3. 通过关键属性，如 *order_number*，把属于同一个订单的事件归并到一起
 4. 给每个 *oder_number* 的客户事件触发器分配一个 *TumblingEventTimeWindows*
-5. 在事件触发前，在触发窗口时间内给事件排序。
-
-
+5. 在事件触发前，在触发窗口时间内给事件排序。触发器会检查在触发窗口内，水印是否被赋予了一个更大的时间戳。这是为了保证当前触发窗口内**按顺序**收集到足够多的元素
+6. 分配第二个 *TumblingEventTimeWindows*，同时设定它的触发点是7天，并添加自定义累加器和时间触发器
+7. 通过计数器结果触发，并生成 *ALL_PARCELS_SHIPPED* 事件；或者根据时间触发，同时生成 *THRESHOLD_EXCEEDED* 事件。计数器的结果由事件 *ORDER_CREATED* 的属性 “*parcels_to_ship*” 决定
+8. 把数据流按照事件  *ALL_PARCELS_SHIPPED* 和 *THRESHOLD_EXCEEDED* 拆分成两组，然后把数据流写入到Kafka里
 
 > 1. *Read the Kafka topics ORDER_CREATED and PARCEL_SHIPPED.*
 > 2. *Assign watermarks for event time processing.*
@@ -140,3 +141,142 @@
 > 6. *Assign a second TumblingEventTimeWindow of 7 days with a custom count and time trigger.*
 > 7. *Fire by count and generate ALL_PARCELS_SHIPPED or fire by time and generate THRESHOLD_EXCEEDED. The count is determined by the "parcels_to_ship" attribute of the ORDER_CREATED event present in the same window.*
 > 8. *Split the stream containing events ALL_PARCELS_SHIPPED and THRESHOLD_EXCEEDED into two separate streams and write those into distinct Kafka topics.*
+
+
+
+The simplified code snippet is as follows:
+
+```java
+// 1
+List topicList = new ArrayList<>();
+topicList.add("ORDER_CREATED");
+topicList.add("PARCEL_SHIPPED");
+DataStream streams = env.addSource(
+      new FlinkKafkaConsumer09<>(topicList, new SimpleStringSchema(), properties))
+      .flatMap(new JSONMap()) // parse Strings to JSON
+
+// 2-5
+DataStream orderingWindowStreamsByKey = streams
+      .assignTimestampsAndWatermarks(new EventsWatermark(topicList.size()))
+      .keyBy(new JSONKey("order_number"))
+      .window(TumblingEventTimeWindows.of(Time.days(7)))
+      .trigger(new OrderingTrigger<>())
+      .apply(new CEGWindowFunction<>());
+
+// 6-7
+DataStream enrichedCEGStreams = orderingWindowStreamsByKey
+     .keyBy(new JSONKey("order_number"))
+     .window(TumblingEventTimeWindows.of(Time.days(7)))
+     .trigger(new CountEventTimeTrigger<>())
+     .reduce((ReduceFunction) (v1, v2) -> v2); // always return last element
+
+// 8
+enrichedCEGStreams
+      .flatMap(new FilterAllParcelsShipped<>())
+      .addSink(new FlinkKafkaProducer09<>(Config.allParcelsShippedType,
+         new SimpleStringSchema(), properties)).name("sink_all_parcels_shipped");
+enrichedCEGStreams
+      .flatMap(new FilterThresholdExceeded<>())
+      .addSink(new FlinkKafkaProducer09<>(Config.thresholdExceededType,
+         newSimpleStringSchema(), properties)).name("sink_threshold_exceeded");
+```
+
+
+
+## 挑战与学习 （Challenges and Learnings）
+
+### CEG触发的条件需要有序的事件
+
+> **The firing condition for CEG requires ordered events**
+
+
+
+根据之前问题的陈述，需要让事件 *ALL_PARCELS_SHIPPED* 拥有最后一个 *PARCEL_SHIPPED* 事件里的“事件时间”信息。触发器 *CountEventTimeTrigger* 触发的条件是，需要在窗口内的事件按顺序排序，所以可以获得最后一个 *PARCEL_SHIPPED* 
+
+> As per our problem statement, we need the ALL_PARCELS_SHIPPED event to have the event time of the last PARCEL_SHIPPED event. The firing condition of the CountEventTimeTrigger thus requires the events in the window to be in order, so we know which PARCEL_SHIPPED event is last.
+
+
+
+在上述代码的2-5步，实现了对事件的排序。接收到每个元素（事件）后，会把**最大的时间戳**作为关键状态存储起来。在注册时间时，触发器会检查水印的值是否大于最大的时间戳。如果是，说明当前窗口内已经收集到了足够的元素（事件）并已经排好了序。我们通过让水印只在所有事件中最早的时间戳中进行来保证这一点。请注意，按窗口状态的大小对事件进行排序代价很高，因为窗口状态是存储在内存中的。
+
+> We implement the ordering in steps 2-5. When each element comes, the keyed state stores the biggest timestamp of those elements. At the registered time, the trigger checks whether the watermark is greater than the biggest timestamp. If so, the window has collected enough elements for ordering. We assure this by letting the watermark only progress at the earliest timestamp among all events. Note that ordering events is expensive in terms of the size of the window state, which keeps them in-memory.
+
+
+
+### 事件以不同的速率到达窗口
+
+> **Events arrive in windows at different rates**
+
+
+
+从Kafka的2个不同的Topic读取事件流：ORDER_CREATED 和 PARCEL_SHIPPED。 前者的规模比后者的大得多，所以消费前者就会比后者慢。
+
+> We read our event streams from two distinct Kafka topics: ORDER_CREATED and PARCEL_SHIPPED. The former is much bigger than the latter in terms of size. Thus, the former is read at a slower rate than the latter.
+
+
+
+事件到达窗口的速率是不同的。这会影响业务逻辑的实现，特别是OrderingTrigger的触发条件。它通过保持最小的可见时间戳作为水印来等待两种事件类型到达相同的时间戳。事件在窗口的状态中堆积，直到触发器触发并清除它们。具体来说，如果主题ORDER_CREATED中的事件从1月3日开始，PARCEL_SHIPPED中的事件从1月1日开始，后者将堆积起来，只有在Flink在1月3日处理完前者之后才会被清除。这将消耗大量内存。
+
+> Events arrive in the window at different speeds. This impacts the implementation of the business logic, particularly the firing condition of the OrderingTrigger. It waits for both event types to reach the same timestamps by keeping the smallest seen timestamp as the watermark. The events pile up in the windows’ state until the trigger fires and purges them. Specifically, if events in the topic ORDER_CREATED start from January 3rd and and the ones in PARCEL_SHIPPED start from January 1st, the latter will be piling up and only purged after Flink has processed the former at January 3rd. This consumes a lot of memory.
+
+
+
+### 一些事件在计算开始时就不正确
+
+> **Some generated events will be incorrect at the beginning of the computation**
+
+
+
+事件要设置过期，因为Kafka队列的资源是有限的，不能设置无限保留。当启动Flink的Job，那些过期的事件不会进行计算。因为缺失了数据，一些复杂的事件要么不会生成，要么会出错。例如，缺失 PARCEL_SHIPPED事件的结果就是生成THRESHOLD_EXCEEDED事件，而不是ALL_PARCELS_SHIPPED。
+
+> We cannot have an unlimited retention time in our Kafka queue due to finite resources, so events expire. When we start our Flink jobs, the computation will not take into account those expired events. Some complex events will either not be generated or will be incorrect because of the missing data. For instance, missing PARCEL_SHIPPED events will result in the generation of a THRESHOLD_EXCEEDED event, instead of an ALL_PARCELS_SHIPPED event.
+
+
+
+真实数据大且凌乱。先用简单的数据开始测试
+
+> **Real data is big and messy. Test with sample data first**
+
+
+
+起初，使用真实数据测试Flink Job并对其业务逻辑进行推理。结果发现，对于调试触发器的逻辑并不方便，而且效率低下。一些事件会丢失，或者事件的属性值是错误的。这使得第一次迭代的推理变得不必要的困难。不久之后，我们实现了一个定制源函数，模拟真实事件的行为，并研究生成的复杂事件。
+
+> At the beginning, we used real data to test our Flink job and reason about its logic. We found its use inconvenient and inefficient for debugging the logic of our triggers. Some events were missing or their properties were incorrect. This made reasoning unnecessarily difficult for the first iterations. Soon after, we implemented a custom source function, simulated the behaviour of real events, and investigated the generated complex events.
+
+
+
+### 有时，数据太大反而不好处理
+
+> **Data is sometimes too big for reprocessing**
+
+
+
+复杂事件的丢失促使我们需要通过重新处理整个Kafka输入主题来再次生成它们，这对于我们来说是30天的事件。**事实证明，这种再处理对我们来说是不可行的。** 因为CEG的触发条件需要有序的事件，而且因为事件是以不同的速率读取的，所以我们的内存消耗随着我们想要处理的事件的时间间隔而增长。事件在窗口的状态中堆积，等待水印进程，以便触发器触发并清除它们。
+
+> The loss of the complex events prompts the need to generate them again by reprocessing the whole Kafka input topics, which for us hold 30 days of events. This reprocessing proved to be unfeasible for us. Because the firing condition for CEG needs ordered events, and because events are read at different rates, our memory consumption grows with the time interval of events we want to process. Events pile up in the windows’ state and await the watermark progression so that the trigger fires and purges them.
+
+
+
+我们使用AWS EC2 t2。中等实例在我们的测试集群中，分配1GB的RAM。我们观察到，我们最多可以在2天内重新处理，而不会因为OutOfMemory异常而导致TaskManager崩溃。因此，我们对早期事件实现了额外的过滤。
+
+> We used AWS EC2 t2.medium instances in our test cluster with 1GB of allocated RAM. We observed that we can reprocess, at most, 2 days worth without having TaskManager crashes due to OutOfMemory exceptions. Therefore, we implemented additional filtering on earlier events.
+
+
+
+
+
+### 结论
+
+> ### Conclusion
+
+
+
+上面我们向您展示了如何设计和实现复杂事件ALL_PARCELS_SHIPPED和THRESHOLD_EXCEEDED。我们已经展示了如何使用Flink的事件时间处理能力实时生成这些数据。我们还介绍了我们在此过程中遇到的挑战，并描述了我们如何使用Flink强大的事件时间处理功能(如水印、事件时间窗口和自定义触发器)来应对这些挑战。
+
+> Above we have shown you how we designed and implemented the complex events ALL_PARCELS_SHIPPED and THRESHOLD_EXCEEDED. We have shown how we generate these in real-time using Flink’s event time processing capabilities. We have also presented the challenges we’ve encountered along the way and have described how we met those using Flink’s powerful event time processing features, i.e. watermark, event time windows and custom triggers.
+
+
+
+高级读者将知道[CEP库](https://ci.apache.org/projects/flink/flink-docs-release-1.3/dev/libs/cep.html) Flink提供。当我们开始使用我们的用例(Flink 1.1)时，我们发现这些用例不容易实现。我们相信，在迭代地改进我们的模式时，对触发器的完全控制给了我们更多的灵活性。同时，CEP库已经成熟，在即将到来的Flink 1.4中，它还将支持[CEP模式中的动态状态更改](https://issues.apache.org/jira/browse/FLINK-6418)。这将使类似于我们的用例的实现更加方便。
+
+> Advanced readers will be aware of the [CEP library](https://ci.apache.org/projects/flink/flink-docs-release-1.3/dev/libs/cep.html) Flink offers. When we started with our use cases (Flink 1.1) we determined that these cannot be easily implemented with it. We believed that full control of the triggers gave us more flexibility when refining our patterns iteratively. In the meantime, the CEP library has matured and in the upcoming Flink 1.4 it will also support [dynamic state changes in CEP patterns](https://issues.apache.org/jira/browse/FLINK-6418). This will make implementations of use cases similar to ours more convenient.
