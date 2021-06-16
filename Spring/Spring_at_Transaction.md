@@ -165,7 +165,7 @@ public class UserService {
     }
 ```
 
-​        该方法是往tb_user表里面插入一条数据，在方法的最后有一个 1/0 ，肯定会报错。我希望的是，在该方法上标注了 @Transactional 注解，当它里面有异常的时候，能够事务回滚。也就是希望数据没有被插入数据库。
+​        该方法是往tb_user表里面插入一条数据，在方法的最后有一个 1/0 ，肯定会报错。这个方法执行结果的预期是：在该方法上标注了 @Transactional 注解，当它里面有异常的时候，能够事务回滚。也就是希望数据没有被插入数据库。
 
 ​        现在在 site.nemo 包下新建一个类 Application1 ，来调用 UserService 的 save1 方法：
 
@@ -185,7 +185,7 @@ public class Application1 {
 
 ​        但是， 1 这个用户还是被插入到数据库了。并没有事务回滚。
 
-​        原因是，我们并没有添加 @EnableTransactionManagement 来开启事务管理，所以 @Transactional 没生效。
+​        原因是，代码中并没有添加 ***@EnableTransactionManagement* 来开启事务管理**，所以 @Transactional 没生效。
 
 ​        当在 ***TransactionConfiguration*** 这个类上面加上 ***@EnableTransactionManagement*** 注解之后，再执行 Application1 的 main() 方法，可以看到数据没有插入即事务被回滚了。
 
@@ -195,20 +195,20 @@ public class Application1 {
 
 ![3](./images/Spring_at_Transaction/3.jpeg)
 
-​        而 @EnableAutoConfiguration 注解使用了@Import来引入 AutoConfigurationImportSelector.class 选择器。查看 
-AutoConfigurationImportSelector.class 的源码，在 selectImports 方法中找到了 getAutoConfigurationEntry 方法的调用：
+​        而 @EnableAutoConfiguration 注解使用了@Import来引入 **AutoConfigurationImportSelector.class** 选择器。查看 
+AutoConfigurationImportSelector.class 的源码，在 selectImports 方法中找到了 *getAutoConfigurationEntry* 方法的调用：
 
 ![4](./images/Spring_at_Transaction/4.jpeg)
 
-​        进入 getAutoConfigurationEntry 方法看一下，它调用了 getCandidateConfigurations 方法：
+​        进入 getAutoConfigurationEntry 方法看一下，它调用了 **getCandidateConfigurations** 方法：
 
 ![5](./images/Spring_at_Transaction/5.jpeg)
 
-​        进入 getCandidateConfigurations 方法，可以看到它会去读spring.factories文件：
+​        进入 getCandidateConfigurations 方法，可以看到它会去读**spring.factories**文件：
 
 ![6](./images/Spring_at_Transaction/6.png)
 
-​        可以知道 getCandidateConfigurations 方法会去读 spring.factories 文件，可以从项目的 Externnal Libraries 里面找到 org.springframework.boot:spring-boot-autoconfigure ，找到它的 META-INF文件夹，可以看到里面有 spring.factories 文件：
+​        可以知道 **getCandidateConfigurations 方法会去读 spring.factories 文件**，可以从项目的 Externnal Libraries 里面找到 org.springframework.boot:spring-boot-autoconfigure ，找到它的 META-INF文件夹，可以看到里面有 spring.factories 文件：
 
 ![7](./images/Spring_at_Transaction/7.jpeg)
 
@@ -232,7 +232,7 @@ AutoConfigurationImportSelector.class 的源码，在 selectImports 方法中找
     @Transactional
     public void save2() {
     	try {
-            User user = new User();
+          User user = new User();
         	user.setName("2");
         	user.setAge(2);
 
@@ -267,7 +267,7 @@ public class Application2 {
 
 ![10](./images/Spring_at_Transaction/10.jpeg)
 
-​        注释里面提到，默认情况下，当发生 Error 或者 RuntimeException 的时候，才会回滚。
+​        注释里面提到，***默认情况下，当发生 Error 或者 RuntimeException 的时候，才会回滚***。
 
 ​        而save2方法上面标注的@Transactional并没有指定 rollbackFor 属性，而且save2里面的异常被我们捕获了且没有再抛出来，所以save2没有回滚。
 
@@ -399,7 +399,7 @@ public class Application5 {
 
 ### 2.6 标注了@Transactional的方法的事务传播类型propagation配置成了SUPPORTS且当前没有事务
 
-​        ***SUPPORTS*** 的意思是，如果当前有事务，就加入，如果没事务，则以非事务运行。
+​        ***SUPPORTS*** 的意思是，如果当前有事务，就加入，***如果没事务，则以非事务运行。***
 
 ​        可以试验一下， 在 UserService 里面添加 save6 方法，在它上面声明@Transactional注解，并且设置 propagation = Propagation.SUPPORTS：
 
@@ -474,7 +474,7 @@ public class Application7 {
 
 ​        从结果可以看出，save72方法没有回滚。
 
-​        这是因为， save7 方法没有标注@Transactional注解，它内部调用 save72()其实可以看做是 this.save72() ，这里的、this其实是个普通对象，没有被AOP动态代理增强过。所以 save72()出现异常的时候没有回滚。
+​        这是因为， save7 方法没有标注@Transactional注解，它内部调用 save72()其实可以看做是 this.save72() ，**这里的this其实是个普通对象，没有被AOP动态代理增强过**。所以 save72()出现异常的时候没有回滚。
 
 ​        那么其实我们也可以知道，如果save7和sav72上面都有@Transactional注解的话，事务最终会回滚，并不是因为save72上面的注解生效了，而是因为save7上面的注解生效了，save72回滚只不过是因为被包在了save7的事务里面，是在整个大事务里面回滚的。
 
