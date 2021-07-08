@@ -1,0 +1,203 @@
+# ECC椭圆曲线加密算法：有限域和离散对数
+
+原文：https://zhuanlan.zhihu.com/p/44743146
+
+
+
+## 整数域模P
+
+​        首先，有限域是一个带有有限元素的集合。比如，有一个有限域是整数模$p$ 的集合（integeres mod p，p是素数），可以表示为 $\mathbb{Z}/p, GF(p)$ 或者 $\mathbb{F}_p$，一般用后者。 
+
+​        在有限域中，有两个二元操作：加（+）和乘（$\times$）。这两种操作都是封闭的，**满足结合律和交换律**，[*这块的封闭应当这样理解：在有限域中，两个数的加和乘的结果仍然在这个有限域中*] 且含有一个独一无二的单位元，对于所有的有限域里的元素，都有一个独一无二的相反数。最后，**乘法还满足分配律**：$x \times (y + z) = x \times y + x \times z$
+
+​        整数模$p$ 的集合包含所有从 $0$ 到 $p - 1$ 的整数。加法和乘法都按模运算规则去计算。举一个有限域 $F_{23}$ 的例子：
+
+* **加法**：$(18 + 9) mod 23 = 27 mod 23 = 4$
+* **减法**：$(7 - 14) mod 23 = -7 mod 23 = 16$
+* **乘法**：$4 * 7 mod 23 = 28 mod 23 = 5$
+* **加法逆元**：$-5 mod 23 = 18$ 的逆 ： $(5 + (-5)) mod 23 = (5 + 18) mod 23 = 0$
+* **乘法逆元**：$9^{-1} mod 23 = 18$ 的逆：$9 * 9^{-1} mod 23 = 9 * 18 mod 23 = 1$
+
+​        整数模$p$ 是一个域，因此上面列的所有属性都是满足的。请注意 $p$ 是**素数**这个条件很重要！比如 整数模$4$ 的集合就不是域：2没有乘法逆元（ $2 * x mod 4 = 1$ ）无解。
+
+### 模$p$ 的除法
+
+​        在定义一个在 $\mathbb{F}_p$ 上的椭圆曲线之前，需要弄清楚在 $\mathbb{F}_p$ 上 $x/y$ 代表什么？可以简单表示为: $ x/y = x * y^{-1}$，$x/y$ 等于 $x$ 乘上 $y$ 的逆元。这个解释给了基本做除法的方法：
+
+1. 求逆元
+2. 做乘法
+
+​        用欧几里得拓展算法来计算乘法逆元非常的“简单易做”，它的时间复杂度是 $O(log p)$ （或者是 $O(k)$ 如果考虑bit长度的话）在最坏的情况下。这里不给出欧几里得拓展算术的细节，用Python代码来展示：
+
+```python
+def extended_euclidean_algorithm(a, b):
+    """
+    Returns a three-tuple (gcd, x, y) such that
+    a * x + b * y == gcd, where gcd is the greatest
+    common divisor of a and b.
+
+    This function implements the extended Euclidean
+    algorithm and runs in O(log b) in the worst case.
+
+    """
+    s, old_s = 0, 1
+    t, old_t = 1, 0
+    r, old_r = b, a
+
+    while r != 0:
+        quotient = old_r // r
+        old_r, r = r, old_r - quotient * r
+        old_s, s = s, old_s - quotient * s
+        old_t, t = t, old_t - quotient * t
+
+    return old_r, old_s, old_t
+
+
+def inverse_of(n, p):
+    """
+    Returns the multiplicative inverse of
+    n modulo p.
+
+    This function returns an integer m such that
+    (n * m) % p == 1.
+    """
+    gcd, x, y = extended_euclidean_algorithm(n, p)
+    assert (n * x + p * y) % p == gcd
+
+    if gcd != 1:
+        # Either n is 0, or p is not a prime number.
+        raise ValueError(
+            '{} has no multiplicative inverse '
+            'modulo {}'.format(n, p))
+    else:
+        return x % p
+```
+
+## 在 $F_p$ 上的椭圆曲线
+
+​        现在，所有的必要元素都已经就位，用来在 $\mathbb{F}_p$ 上定义椭圆曲线，它的形式就是**点集**，可用这个式子表示：
+$$
+\{(x,y) \in \mathbb{R}_2 | y^2 = x^3 + ax + b, 4a^3 + 27b^2 \neq 0 \} \cup \{0\}
+$$
+现在可以写成如下的式子：
+$$
+\{(x,y) \in (\mathbb{F}_p)^2 | y^2 \equiv  x^3 + ax + b (mod p), 4a^3 + 27b^2 \neq 0 (mod p) \} \cup \{0\}
+$$
+这里的 $0$ 仍然是无限远的点，$a$ 和 $b$ 是 $\mathbb{F}_p$ 上的两个整数。
+
+![1](./images/Finit_field_Discrete_logarithm/1.jpg)
+
+​                                                                                                                图1
+
+​        上图1，是曲线 $y^2 = x^3 -yx + 10 (mod p)$ 且 $p = 19, 97, 127, 487$ 。请注意：对于每一个 $x$ ，至多有两个堆成的点满足： $y = p / 2$ 。
+
+![2](./images/Finit_field_Discrete_logarithm/2.jpg)
+
+​                                                                                                               图2
+
+​        上图2，曲线 $y^2 = x^3(mod 23)$ 是一个奇点，并且在 $(0,0)$ 处有三个点，这是一个无效的椭圆曲线。
+
+图1是连续的椭圆曲线在 $xy$ 轴平面上表现为不想交的点集。**在 $\mathbb{F}_p$ 上的椭圆曲线仍然可以形成阿贝尔群**。
+
+### 点加
+
+​        为了能在有限域 $\mathbb{F}_p$ 上更好的工作，需要改变一点点关于**加法**的定义。在实数域上，约定俗成三个**对齐**的点的和是 $0$ ($P + Q + R = 0$）。在实数域上，这个定义没有问题，就是**共线**。但是在 $\mathbb{F}_p$ 上，如何定义三个点对齐呢？
+
+​        如果一条直线连接了三个点，这三个点就是对齐的。当然，$\mathbb{F}_p$ 上的直线不同于 $\mathbb{R}$ 上的直线。也就是说，$\mathbb{F}_p$ 上的直线就是点集 $(x,y)$ ，这个点集满足：$ax + by + c \equiv 0 (mod p)$ （这里带有 $(mod p)$ 的标准的线性方程式）
+
+![3](./images/Finit_field_Discrete_logarithm/3.jpg)
+
+​                                                                                                               图3
+
+​        说明：图3的所有点都在 $y^2 \equiv x^3 -x + 3 (mod 127)$ ，$P = (16,20) and Q = (41,120)$。请注意，连接某些点的一次方程 $y \equiv 4x + 83 (mod 127)$ 在图中不停的“重复（因为有mod 127）”自己。
+
+​        鉴于这已经是一个群，所以**点加**具有一些通用的属性：
+
+* $Q + 0 = 0 + Q$ （单位元的定义）
+* 给定一个非零点$Q$，逆元 $-Q$ 和它具有**相同**的横坐标，但是纵坐标**相反**。或者还有一种方式，$-Q = (x_Q, -y_Q mod p)$。举个例子，如果曲线在 $\mathbb{F}_{29}$ 上有一个点 $Q = (2,5)$，逆元式 $-Q = (2, -5 mod 29) = (2, 24)$
+* $P + (-P) = 0$ （相反数的定义）
+
+### 代数和
+
+​        点加的计算，要在每个等式后面加上“$mod p$”。因此，鉴于 $P = (x_P, y_p), Q = (x_Q, y_Q)$ 和 $R = (x_R, y_R)$ ，可以计算 $P + Q = -R$，如下：
+$$
+\begin{align}
+x_R &= (m^2 -x_P -x_Q) mod p \\
+y_R & = [y_P + m(x_R -x_P)] mod p \\
+ &= [y_Q + m(x_R -x_Q)] mod p
+\end{align}
+$$
+
+* 如果 $P \neq Q$，斜率是： $m = (y_P -y_Q)(x_P - x_Q)^{-1} mod p$
+
+* 如果$P = Q$，斜率是：$m = (3x^2_P + a)(2y_P)^{-1} mod p$
+
+​        这个式子适用于任一域，无论是有限域还是无限域（除了 $\mathbb{F}_2$ 和 $\mathbb{F}_3$）。
+
+​        由于在几何方法上有一些问题，所以不会定义一个几何方法。比如，要计算 $P + P$ ，需要在曲线的点$P$做切线（正切），但是如果不是一条线的话（没有连续性），“正切”没有任何意义。
+
+## 椭圆曲线的阶
+
+​        每个在有限域上的椭圆曲线，都由有限个点组成。那么，到底多少个点呢？
+
+​        首先，要定一下，在一个群有多少个点就叫做这个群的“阶”（order）。群举从 $x$ 到 $p-1$ 所有可能的值去数有多少个点不太可行，因为它的时间复杂度是 $O(p)$ ，当 $p$ 很大的时候，算下来就很慢很慢。
+
+​        还有另一个更快的算法来计算阶：Schoof算法。
+
+## 数乘和循环子群
+
+​        在实数域，乘法的定义是： $nP = \underbrace{P + P + \cdots + P}_{n \  times}$
+
+​        可以用倍加算法去做乘法，时间复杂度是 $O(log(n))$ （或者 $O(k)$， 这里的 $k$ 是 $n$ 的二进制倍数）。
+
+​        在 $\mathbb{F}_p$ 上的椭圆曲线的乘法有个很有意思的属性。取一个曲线：$y^2 = x^3 + 2x + 3 (mod 97)$ 和点 $P=(3,6)$ ，现在来计算 $P$ 的所有倍数：
+
+![4](./images/Finit_field_Discrete_logarithm/4.jpg)
+
+​               *$p=(3,6)$ 的所有倍乘的取值只有5个点 $(0, P, 2P, 3P, 4P )$ 然后不停的循环重复。能很容易的发现椭圆曲线上的数乘和模运算的加法非常相似。*
+
+* $0P = 0$
+* $1P = (3,6)$
+* $2P = (80,10)$
+* $3P = (80,87)$
+* $4P = (3, 91)$
+* $P = 0$
+* $6P = (3,6)$
+* $7P = (80, 10)$
+* $\cdots$
+
+到此，可以发现两个事情：
+
+1. $P$ 的倍乘只有5个取值，永远不会出现第6个
+2. 它们是循环重复的
+
+于是，可以这样写：（$k$ 取任意整数倍）
+
+* $5kP = 0$
+* $(5k + 1)P = P = (3,6)$
+* $(5k + 2)P = 2P = (80,10)$
+* $(5k + 3)P = 3P = (80,87)$
+* $(5k + 4)P = 4P = (3,91)$
+
+所以，这5个式子被“压缩” 成一个（模运算）： $kP = (k \ mod \ 5) P$
+
+​        不仅如此，可以立即验证：$P$ 的加法是闭环。这意味着：不论加的是 $0,P,2P,3P$ 还是 $4P$，结果永远都是这五个点重的一个，其他点永远不会出现在这根椭圆曲线的结果里。
+
+​        这个规则同样适用于所有的点，不仅仅是对 $P = (3,6)$ 。事实上，对于任意的 $P$， 有：
+$$
+nP + mP = \underbrace{P + \cdots +P}_{n \ times} + \underbrace{P + \cdots + P}_{m \ times} = (n + m ) P
+$$
+这就意味着，如果将 $n$ 倍的 $P$ 进行相加，获得的仍然是 $P$ 的倍数。（比如：$nP$ 的相加是个闭环）这足够来证明：**$nP$ 的集合是椭圆曲线形成的群里的一个具有循环性质的子群（the set of the multiples of $P$ is a cyclic subgroup of the group formed by the elliptic curve.）**。这里的点 $P$ 叫做循环子群的 **生成器** 或者 **基点**。
+
+### 子群的阶
+
+​        
+
+### 找基点
+
+
+
+## 离散对数
+
+
+
