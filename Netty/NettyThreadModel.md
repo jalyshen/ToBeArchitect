@@ -57,3 +57,13 @@ ChannelOutboundHandler回调方法：
 ​        通过NioSocketChannel的write方法向连接里写入数据的时候是**非阻塞**的，马上会返回，即使调用写入的线程是业务线程。Netty通过在ChannelPipeline中判断调用NioSocketChannel的write的调用线程是不是其敌营的NioEventLoop中的线程，如果发现不是，则会把写入请求封装为WriteTask投递到其对应的NioEventLoop中的队列里面，然后等其对应的NioEventLoop中的线程轮询读写事件的时候，将其从队列里面取出来执行。
 
 **读操作**：
+
+​        当从 NioSocketChannel 中读取数据时候，并不是需要业务线程阻塞等待，而是等NioEventLoop中的I/O轮询线程发现 Selector 上有数据就绪时，通过事件通知方式来通知业务数据已就绪，可以来读取并处理了。
+
+​        每个NioSocketChannel 对应的读写事件都是在其对应的 NioEventLoop 管理的单线程内执行，对同一个NioSocketChannel不存在并发读写，所以无需加锁处理。
+
+
+
+## 总结
+
+​        使用Netty框架进行网络通信时，当发起I/O请求后会马上返回，而不会阻塞业务调用线程；如果想要获取请求的响应结果，也不需要业务调用线程使用阻塞方式等待，而是当响应结果出来时，使用I/O线程异步通知业务的方式。所以在整个请求->响应过程中，业务线程不会由于阻塞等待而不能干其他事情。
