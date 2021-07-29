@@ -275,12 +275,6 @@ class ReadXML
 
 代码如下：
 
-```
-
-```
-
-
-
 ```java
 package adapter;
 //目标接口
