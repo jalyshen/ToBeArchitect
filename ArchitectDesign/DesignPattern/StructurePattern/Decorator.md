@@ -187,7 +187,7 @@ class Succubus extends Changer {
         super.display();
     }
 
-    public void setChanger() {
+    private void setChanger() {
         ((original) super.m).setImage("Morrigan1.jpg");
     }
 }
@@ -203,7 +203,7 @@ class Girl extends Changer {
         super.display();
     }
 
-    public void setChanger() {
+    private void setChanger() {
         ((original) super.m).setImage("Morrigan2.jpg");
     }
 }
