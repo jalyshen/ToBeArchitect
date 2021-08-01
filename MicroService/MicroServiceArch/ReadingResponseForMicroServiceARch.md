@@ -14,7 +14,7 @@
 
 ​        当然，2018年的时候， Service Mesh 之类的东西还没有太火，所以后来网站上有了新的更新版本：
 
-![2](./images/ReadingResponseForMicroServiceARch/2.png)
+![2](./images/ReadingResponseForMicroServiceARch/2.jpg)
 
 ​        个人喜欢这种大图，不管什么领域，只要照着图去一点一点填坑就行了。没有这个样的图，总觉得是在望不见头的技术森林里兜兜转转，找不到北。
 
