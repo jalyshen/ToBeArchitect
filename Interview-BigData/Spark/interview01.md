@@ -241,5 +241,243 @@ dagScheduler.runJob(rdd, cleanedFunc, partitions, callSite, allowLocal, resultHa
 
 ## 11 RDD共享变量
 
+​        在应用开发中，一个函数被传递给Spark操作（例如map或者reduce），在一个远程集群上运行，它实际上操作的是这个函数用到的所有变量的独立拷贝。这些变量会被拷贝到每一台机器。通常看来，在任务之间中，读写共享变量显然不够高效。然而，Spark还是为了两种常见的使用模式，提供了两种有限的共享变量：**广播变量**和**累加器**。
 
+### 11.1 广播变量 (Broadcast Variables)
+
+* 广播变量缓存到各个节点的**内存中**，而不是每个task
+* 广播变量被创建后，能被在集群中运行的**任何函数调用**
+* 广播变量是**只读**的，不能在被广播后修改
+* 对于大数据集的广播，Spark尝试使用高效的广播算法来降低通信成本
+  * val broadcastVar = sc.broadcast(Array(1,2,3)) # 方法参数中是要广播的变量
+
+### 11.2 累加器
+
+​        累加器只支持加法操作，可以高效地并行，用于实现计数器和变量求和。Spark 原生支持数值型和标准可变集合的计数器，但用户可以添加新的类型。**只有驱动程序才能获取累加器的值**。
+
+
+
+## 12 Spark-submit的时候，如何引入外部jar
+
+​        在通过spark-submit提交任务时，可以通过添加配置参数来指定：
+
+* -driver-class-path 外部jar包
+* -jars 外部jar包
+
+## 13 Spark如何防止内存溢出
+
+* driver端的内存溢出
+
+  * 可以增大driver的内存参数：spark.driver.memory (default 1G)
+  * 这个参数用来设置 Driver 的内存。在Spark程序中，SparkContext、DAGScheduler 都是运行在Driver端的。对应 RDD 的Stage 切分也是在 Driver 端运行。如果用户自己写的程序有过多的步骤，切分出过多的Stage，这部分信息消耗的是Driver的内存，这个时候需要调大Driver的内存
+
+* map过程产生大量对象导致内存溢出
+
+  * 这种溢出的原因是：在单个map中产生了大量的对象导致。例如：
+
+    ```scala
+    rdd.map(x => for (i < -1 to 10000) yield i.toString)
+    ```
+
+    这个操作在RDD中，每个对象都产生了10000个对象，这肯定很容易产生内存溢出的问题。针对这种问题，在不增加内存的情况下，可以通过减少每个Task的大小，以便达到每个Task即使产生大量的对象，Executor的内存也能够装得下。
+
+    具体的做法，可以在会产生大量对象的map操作之间调用 repartition 方法，分区成更小的快传入map。例如：
+
+    ```scala
+    rdd.repartition(10000).map(x => for (i < -1 to 10000) yield i.toString)
+    ```
+
+    面对这种问题，注意，**不能**使用 rdd.coalesce 方法，这个方法智能减少分区，不能增加分区，不会有shuffle过程。
+
+* 数据不平衡导致内存溢出
+
+  * 数据不平衡除了有可能导致内存溢出外，也有可能导致性能问题。解决方法和上面说的类似，就是调用repartition重新分区。
+
+* shuffle后内存溢出
+
+  * **shuffle内存溢出的情况可以说都是shuffle后，单个文件过大导致的**。在Spark中，***join，reduceByKey*** 这一类型的过程，都会有 shuffle 的过程。在shuffle的使用，需要传入一个partitioner，大部分Spark中的shuffle操作，**默认的partitioner都是HashPatitioner，默认值是父RDD中最大的分区数**，这个参数通过 ***spark.default.parallelism*** 控制（在spark-sql 中用 *spark.sql.shuffle.partitions*），spark.default.parallelism 参数只对HashPartitioner有效，所以如果是别的Partitioner或者自己实现的Partitioner，就不能使用 spark.default.parallelism 参数来控制shuffle的并发数量了。
+
+    如果是别的 partitioner 导致的 shuffle 内存溢出，就需要从 partitioner 的代码增加 partitions的数量。
+
+* standalone模式下资源分配不均匀导致内存溢出
+
+  * 在Standalone 的模式下，如果配置了 *-total-executor-cores* 和 *-executor-memory* 这两个参数，但是没有配置 *-executor-cores* 这个参数的话，就有可能导致：每个 Executor 的 memory 是一样的，但是 cores 的数量不同，那么在 cores 数量多的 Executor 中，由于能够同时执行多个Task，就容易导致内存溢出的情况。
+
+    这种情况的解决方式就是：同时配置 *-executor-cores* **或者** *spark.executor.cores* 参数，确保 Executor 资源分配均匀。
+
+* 使用rdd.persist(StorageLevel.MEMORY_AND_DISK_SER)代替rdd.cache()
+
+## 14 Spark中map-side-join关联优化
+
+​        将多份数据进行关联是数据处理过程中非常普遍的用法。不过在分布式计算系统中，这个问题往往会变得非常麻烦，因为框架提供的 join 操作一般会将所有数据根据 key 发送到所有的 reduce 分区中去，也就是 shuffle 的过程。造成大量的网络以及磁盘IO消耗，运行效率极其低下，这个过程一般被称为 reduce-side-join。
+
+​        如果其中有张表比较小的话，则可以自己实现在 map 端实现数据关联，跳过大量数据进行 shuffle 的过程，运行时间得到大量缩短，根据不同数据可能会有几倍到数十倍的性能提升。
+
+​        何时使用：在海量数据中匹配少量特定数据
+
+​        原理：reduce-side-join 的缺陷在于，会将 Key 相同的数据发送到同一个 partition中进行运算，大数据集的传输需要长时间的IO，同时任务并发度受到限制，还可能造成数据倾斜。
+
+​        reduce-side-join的运行图：
+
+![4](./images/interview01/4.png)
+
+​        map-side-join 运行图：
+
+![5](./images/interview01/5.png)
+
+​        将少量的数据转化为map进行广播，广播会将此map发送到每个节点中，如果不进行广播，每个task执行时都会去获取该map数据，造成了性能浪费。对大数据进行遍历，使用 *mapPartition* 而不是 *map*，因为 *mapPartition* 是在每个 partition 中进行操作，因此可以减少遍历时新建 broadCastMap.value 对象的空间消耗，同时匹配不到的数据也不会返回。
+
+## 15 Spark整合Spark Streaming
+
+​         kafka 0.10 版本之前有两种方式与SparkSteaming整合：一种是基于receiver，另一种是direct。
+
+### 15.1 Receiver
+
+​        receiver 采用了 kafka 高级api，利用 receiver 接收器来接收 kafka topic 中的数据，从kafka接收来的数据会存储在spark的executor中，之后 spark streaming 提交的job会处理这些数据，kafka中topic的偏移量是保存在zookeeper中。
+
+* 基本使用
+
+  ```scala
+  // Streaming 支持读取kafka的多个主题
+  val topics = Array("helloTopic", "topic2")
+  val stream: InputStream[ConsumerRecord[(String, String)]] = KafkaUtils.createDirectStream[String, String](
+      ssc,
+      // Kafka的broker和executors在同一台机器上，采用这个：
+      // LocationStrategies.PreferBrokers
+      // 资源会平均分配
+      LocationStrategies.PerferConsistent,
+      // 消费者订阅哪些主题
+      Subscribt[String, String](topics, kafkaParams)
+  )
+  stream.foreachRDD(rdd => {
+      // rdd中的数据类型是ConsumerRecord[String, String]，拿到这里的value
+      val result : RDD[(String, Int)] = rdd.map(_ value()).map((_, 1)).reduceByKey(_ + _)
+      result.foreach(print)
+  })
+  ```
+
+  
+
+* 几点注意
+
+  * 在 Receiver 的方式中，Spark中的 partition 和 Kafka 中的 partition 并不是相关的，所以如果加大每个topic 的partition 数量，仅仅是增加线程来处理由单一 receiver 消费的主题。但是这并没有增加 spark 在处理数据上的并行度
+  * 对于不同的 Group 和 topic ，可以使用多个 Receiver 创建不同的 DStream 来并行接收数据，之后可以利用 union 来统一成一个 Dstream
+  * 在默认配置下，这种方式可能会因为底层的失败而丢失数据。因为 receiver 一直在接收数据，在其已经通知zookeeper**数据接收完成但是还没有处理的时候**， executor 突然挂掉（或者driver挂掉通知executor关闭），缓存在其中的数据就会丢失。如果希望做到高可靠，让数据零丢失，如果启用了 Write ahead logs（spark.streaming.receiver.writeAheadLog.enable=true）该机制会同步地将接收到的Kafka数据写入分布式文件系统（比如HDFS）上的预写日志中。所以，即使底层节点出现了失败，也可以使用预写日志中的数据进行恢复。复制到文件系统如HDFS，那么 storage level需要设置成StorageLevel.MEMORY_AND_DISK_SER，也就是 KafkaUtils.createStream(..., StorageLevel.MEMORY_AND_DISK_SER)
+
+### 15.2 Direct
+
+​        中Spark 1.3 之后，引入了 Direct 方式。不同于 Receiver 的方式，Direct方式没有Receiver这一层，其会周期性的获取Kafka中每个topic的每个partition中的最新offsets，之后根据设定的maxRatePerPartition来处理每个batch。（设置spark.streaming.kafka.maxRatePerPartition = 10000，限制每秒钟从topic的每个parttion最多消费的消息条数）
+
+### 15.3 两种方式的优缺点
+
+* 采用Receiver方式：这种方式可以保证数据不丢失，但是无法保证数据只被处理一次。WAL实现的是 ***At-Least-Once*** 语义（至少被处理一次），如果在写入到外部存储的数据还没有将offset更新到zookeeper就挂掉，这些数据将会被反复消费。同时，降低了程序的吞吐量
+* 采用Direct方式：相比Receiver模式，这种方式能确保 **WAL** 机制更加健壮。区别于使用Receiver来被动接收数据，Direct模式会周期性地主动查询Kafka，来获得每个 topic + partition 的最新offset，从而定义每个batch的offset的范围。当处理数据的job启动时，就会使用kafka的简单consumer api来获取kafka指定offse范围的数据。
+
+* **优点**
+
+  * **简化并行读取**
+
+    如果要读取多个partition，不需要创建多个输入DStream然后对它们进行union操作。Spark会创建跟 Kafka partition 一样多的RDD partition，并且会并行从 Kafka 中读取数据。所以，在Kafka partition 和 RDD partition 之间，有一个一对一的映射关系
+
+  * **高性能**
+
+    如果要保证零数据丢失，在基于 receiver 的方式中，需要开启WAL机制。但是这种方式其实效率低下，因为数据实际上被复制了两份，Kafka自己本身就有高可靠的机制，会对数据复制一份，而这里又会复制一份到WAL中。而基于Direct的方式，不依赖Receiver，不需要开启WAL机制，只要Kafka中做了数据的复制，那么就可以通过kafka的副本进行恢复
+
+  * **一次且仅一次的事务机制** 
+
+    基于receiver的方式，是使用Kafka的高阶API来在ZooKeeper中保存消费过的offset的。这是消费Kafka数据的传统方式。这种方式配合着WAL机制可以保证数据零丢失的高可靠性，但是无法保证数据被处理一次且仅一次（可能会被处理2次或更多次）。因为Spark和ZooKeeper之间可能是不同步的。基于Direct的方式，使用Kafka的简单 API， Spark Streaming 自己就负责追踪消费的offset，并保存在checkpoint中。 Spark自己一定是同步的，因此可以保证数据是消费一次且仅消费一次。不过需要自己完成将offset写入zk的过程。
+
+* 代码示例：
+
+  ```scala
+  messages.foreachRDD(rdd => {
+      val message = rdd.map(_._2) // 对数据进行一些操作
+      message.map(method) // 更新zk上的offset（自己实现）
+      updateZKOffsets(rdd)
+  })
+  ```
+
+  sparkStreaming 程序自己消费完成后，自己主动去更新zk上面的offset。也可以将zk中的偏移量保存在mysql或者redis数据库中，下次重启时，直接读取mysql或者redis中的offset，获取上次消费的偏移量（offset），接着读取数据。
+
+## 16 Spakr master在使用Zookeeper进行HA时，有哪些元数据保存在Zookeeper
+
+​        Spark通过这个参数 ***spark.deploy.zookeeper.dir*** 指定 master 元数据在 zookeeper 中保存的位置，包括 ***worker, master, application, executors***。 Standby 节点要从ZK中获得元数据信息，恢复集群运行状态，才能对外继续提供服务，作业提交资源申请等，在恢复前是不能接受请求的。
+
+​        另外，master切换需要注意两点：
+
+1. 在master切换的过程中，所有的已经在运行的程序皆正常运行，因为spark application 在运行前就已经通过cluster manager 获得了计算资源，所以在运行时 job 本身的调度和处理，与master是没有任何关系的
+2. 在master切换过程中**唯一的影响是不能提交新的Job**。一方面不能提交新的应用程序给集群，因为只有Active Master 才能接受新的程序的提交请求。另一方面，已经运行的程序也不能action操作触发新的job提交请求
+
+
+
+## 17 Spark Master HA主从切换过程不会影响集群已有的作业运行，为啥？
+
+​        因为程序在运行之前，已经向集群申请过资源，这些资源已经提交给Driver了。也就是说，已经分配了资源了。这是粗粒度分配，一次性分配好资源后，不需要再关注资源分配，在运行时让Driver和Executor自动交互。
+
+​        弊端是，如果资源分配太多，任务运行完不会很快释放，造成资源浪费，这里不适用细粒度分配的原因，也是因为任务提交太慢。
+
+## 18 什么是粗粒度、细粒度，各自有有什么优缺点？
+
+* **粗粒度**
+
+  启动时就分配好资源，程序启动，后续具体使用就使用分配好的资源，不需要再分配资源。
+
+  * **优点**：作业特别多时，资源复用率较高。
+  * **缺点**：容易资源浪费。如果一个job有1000个task，完成了999个，还有一个没有完成，此时那999个资源就闲置在那儿，会造成资源大量浪费
+
+* **细粒度**
+
+  用资源的时候分配，用完了就立即回收资源，启动会麻烦一些，启动一次分配一次。
+
+## 19 Driver的功能是什么？
+
+​        一个Spark作业运行时包括一个Driver进程，也就是作业的主进程，具有main函数，并且有sparkContext的实例，是程序的入口。
+
+​        Driver从功能上说，主要负责向集群申请资源，向master注册信息，负责了作业的调度，负责了作业的解析，生成stage并调度task到executor上，包括DAGScheduler，TaskScheduler。
+
+## 20 Spark技术栈有哪些组件，每个组件有什么功能？适合什么场景？
+
+1. **Spark Core**
+
+   是其他组件的基础，spark的内核。主要包含：
+
+   * 有向循环图
+   * RDD
+   * Lingage
+   * Cache
+   * Broadcast
+
+   并封装了底层通讯框架。
+
+2. **SparkStreaming**
+
+   是一个对实时数据流进行高通量、容错处理的流式处理系统。可以对多种数据源（如：Kafka、Flume、Twitter、Zero和TCP Socket）进行类似Map、Reduce和Join等复杂操作，将流式计算分解成一些列短小的批处理作业
+
+3. **Spark SQL**
+
+   Spark是Spark SQL的前身，Spark SQL的一个重要特点是能够统一处理关系表和RDD，使得开发人员可以轻松地使用SQL命令进行外部查询，同时进行更复杂的数据分析。
+
+4. **BlinkDB**
+
+   是一个用于在海量数据上运行交互SQL查询的大规模并行查询引擎，它允许用户通过权衡数据精度来提升查询响应时间，其数据的精度被控制在允许的误差范围内。
+
+5. **MLBase**
+
+   是Spark生态圈的一部分，专注于机器学习，让机器学习的门槛更低，让一些可能并不了解机器学习的用户也能方便地使用MLBase。MLBase分为四部分：
+
+   * MLlib
+   * MLI
+   * ML Optimizer
+   * MLRuntime
+
+6. **GraphX**
+
+   用户图形和图形并行计算
+
+## 21 Spark中Worker的主要工作是什么？
+
+​        woker的主要功能，是管理当前节点内存、CPU的使用情况，接受master发送过来的资源指令，通过 ***executorRunner*** 启动程序分配任务，worker就类似于包工头，管理分配新进程，做计算的服务，相当于process服务，需要注意的是：
+
+1. worker会不会汇报当前信息给master？worker发**心跳**给master主要**只有workid**，不会以心跳的方式发送资源信息给master，这样master就知道worker是否存活。**只有故障的时候才会发送资源信息**
+2. worker不会运行代码，具体运行代码的是 executor。Executor可以运行具体application节点的业务逻辑代码；操作代码的节点，不会去运行代码。
 
