@@ -481,3 +481,48 @@ dagScheduler.runJob(rdd, cleanedFunc, partitions, callSite, allowLocal, resultHa
 1. worker会不会汇报当前信息给master？worker发**心跳**给master主要**只有workid**，不会以心跳的方式发送资源信息给master，这样master就知道worker是否存活。**只有故障的时候才会发送资源信息**
 2. worker不会运行代码，具体运行代码的是 executor。Executor可以运行具体application节点的业务逻辑代码；操作代码的节点，不会去运行代码。
 
+## 22 Hadoop和Spark中的Shuffle的异同
+
+1. 从 high-level 角度看，两者并**没有**大的差异。都是将 mapper （Spark里是 shuffleMapTask）的输出进行 partition，不同的 partition 送到不同的 reducer （Spark里 reducer 可能是下一个 stage 里的 shuffleMapTask，也可能是ResultTask）。Reducer 以内存做缓冲区，边 shuffle 边 aggregate 数据，等到数据 aggregate 好以后进行 reduce() （Spark 里可能还有后续的一系列动作）
+
+2. 从 low-level 角度看，两者**差别不小**。
+
+   Hadoop MapReduce 是 sort-based，进入 combine() 和 reduce() 的 records 必须先 sort。这样的好处在于 combine/reduce 可以处理大规模的数据，因为其输入数据可以通过外排得到（mapper 对每段数据先做排序，reducer 的shuffle 对排好序的每段数据做归并）。
+
+   目前的 Spark 默认选择的是 hash-based，通常使用 HashMap 来对 shuffle 来的数据进行 aggregate， 不会对数据进行提前排序。如果用户需要经过排序的数据，那么需要自己调用类似 sortByKey() 的操作；如果是 Spark1.1 ，可以将 *spark.shuffle.manager* 设置为 *sort*，则会对数据进行排序。 在Spark1.2 中，sort将作为默认的shuffle 实现。
+
+3. 从实现角度看，两者也有不少差别。
+
+   Hadoop MapReduce 将处理流程划分出明显的几个阶段：map，spill, merge,  shuffle, sort, reduce 等。每个阶段各司其职，可以按照过程式的编程思想来逐一实现每个阶段的功能。
+
+   在Spark中，没有这样功能明确的阶段，只有不同的 stage 和一系列的 transformation，所以 spill，merge， aggregate 等操作需要蕴含在transformation中。
+
+   如果将 map 端划分数据、持久化数据的过程称为 shuffle write，而将 reducer 读入数据、aggregate 数据的过程称为 shuffle read，那么在Spark中，问题就变为：“怎么在job的逻辑或者物理执行图中加入 shuffle write 和 shuffle read 的处理逻辑？” 和 “两个处理逻辑应该怎么高效实现？”。
+
+   Shuffle Write 由于不要求数据有序，shuffle write 的任务很简单：将数据partition 好，并持久化。之所以要持久化，一方面是要减少内存存储空间压力，另一方面也是为了 fault-tolerance。
+
+## 23 MapReduce和Spark都是并行计算，有什么差异
+
+​        相同点：这两者都是MR模型来进行并行计算。
+
+1. Hadoop 的一个作业称为job，job里分为map task 和 reduce task，每个task都是在自己的进程中运行的，当task结束时，进程也会结束。
+
+2. Spark 用户提交的任务称为application，一个application对应一个sparkContext，app中存在多个job，每触发一次action操作，就会产生一个job。这些job可以并行或串行执行，每个job中有多个stage，stage是shuffle过程DAGScheduler通过RDD之间的依赖关系划分job而来的，每个stage里面有多个task，组成taskset有TaskScheduler分发到各个executor中执行，executor的生命周期是会app一样的，即使没有job运行也是存在的，所以task可以快速启动读取内存进行计算。
+
+3. hadoop的job只有map和reduce操作，表达能力比较欠缺，而且在MR过程中会重复的读写hdfs，造成大量的IO操作，多个job需要自己管理关系。
+
+   Spark的迭代计算都是在内存中进行，API中提供了大量的RDD操作，如：join，groupby等，而且通过DAG图可以实现良好的容错。
+
+## 24 Spark有哪些组件
+
+* **master**：管理集群和节点，不参与计算
+
+* **worker**：计算节点，进程本身不参与计算，给master汇报
+
+* **driver**：运行程序的main方法，创建 spark context对象
+
+* **spark context**：控制整个application的生命周期，包括DAGSchedular和TaskSchedular等组件
+
+* **client**：用户提交程序的入口
+
+  
