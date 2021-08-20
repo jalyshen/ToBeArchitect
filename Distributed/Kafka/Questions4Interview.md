@@ -97,7 +97,7 @@
 * **LEO**：Log End Offset。**日志末端位移值**或**末端偏移量**。表示日志下一条待插入消息的位移值。举个例子：如果日志有10条信息，位移值从0开始，那么，第10条消息的位置值就是9，此时，LEO = 10
 * **LSO**：Log Stable Offset。这是Kafka事务的概念。如果没有使用到事务，那么这个值不存在(其实也不是不存在，只是设置成一个无意义的值)。**该值控制了事务型消费者能够看到的消息范围**。它经常与 Log **Start** Offset，即日志起始位移相混淆，因为有些人将后者也缩写成LSO。在Kafka中，LSO专指 Log Stable Offset
 * **AR**：Assigned Replicas。AR，是主题被创建后，分区创建时被分配的副本集合，副本个数由副本因子决定
-* **ISR**：In-Sync Replicas。Kafka中特别重要的概念，指代的是AR中那些与Leader保持同步的副本集合。在AR中的副本可能不在ISR中，但Leader副本天然就包含在ISR中。
+* **ISR**：In-Sync Replicas。Kafka中特别重要的概念，**指代的是AR中那些与Leader保持同步的副本集合**。在AR中的副本可能不在ISR中，但**Leader副本天然就包含在ISR中**。
   * 关于ISR，还有一个常见的面试题是：如何判断副本是否应该属于ISR。目前的判断依据是：Follower副本的LEO落后 Leader LEO的时间，是否超过了Broker端参数replica.lag.time.max.ms值。如果超过了，副本就从ISR中移除。
 * **HW**：高水位值(High watermark)。这是控制消费者可读取消息范围的重要字段。一个普通消费者只能“看到”Leader 副本上介于 Log Start Offset 和 HW(不含)之间的 所有消息。水位以上的消息是对消费者不可见的。
   * 关于HW，问法有很多，能想到的 最高级的问法，就是让你完整地梳理下 Follower 副本拉取 Leader 副本、执行同步机制 的详细步骤。这就是最后一道题的题目，一会儿会给出答案和解析。
@@ -114,24 +114,24 @@
 
 ​        分区的 Leader 副本选举对用户是完全透明的，它是由 Controller 独立完成的。需要回答的是，在哪些场景下，需要执行分区 Leader 选举。每一种场景对应于一种选举策略。当前，Kafka 有 4 种分区 Leader 选举策略。
 
-* Offline Partition Leader：每当有分区上线时，就需要执行Leader选举。所谓的分区上线，可能是创建了新分区，也可能是之前的下线分区重新上线。**这是最常见的分区Leader选举场景**
+* **Offline Partition Leader**：每当有分区上线时，就需要执行Leader选举。所谓的分区上线，可能是创建了新分区，也可能是之前的下线分区重新上线。**这是最常见的分区Leader选举场景**
 
-* Reassign Partition Leader：当手动运行 *kafka-reassign-partition* 命令时，或者是调用Admin的 alterPartitionReassignments 方法执行分区副本重分配时，可能触发此类选举。
+* **Reassign Partition Leader**：当手动运行 *kafka-reassign-partition* 命令时，或者是调用Admin的 alterPartitionReassignments 方法执行分区副本重分配时，可能触发此类选举。
 
   假设原来的AR是 *[1, 2, 3]* , Leader是 1 ，当执行副本重分配后，副本集合 AR 被设成了 *[4, 5, 6]* ，显然Leader必须要变更，此时会发生 Reassign Partition Leader 选举
 
-* Rreferred Replica Partiton Leader：当手动运行 *kafka-preferred-replica-election* 命令，或自动触发了 Preferred Leader选举时，该类策略被激活。所谓的 Preferred Leader，指的是 AR 中的第一个副本。比如 AR 是 *[3, 2, 1]* ，那么Preferred Leader就是 3
+* **Rreferred Replica Partiton Leader**：当手动运行 *kafka-preferred-replica-election* 命令，或自动触发了 Preferred Leader选举时，该类策略被激活。所谓的 Preferred Leader，指的是 AR 中的第一个副本。比如 AR 是 *[3, 2, 1]* ，那么Preferred Leader就是 3
 
-* Controlled Shutdown Partition Leader：当Broker正常关闭时，该Broker上的所有Leader副本都会下线，因此，需要为受影响的分区执行相应的Leader选举
+* **Controlled Shutdown Partition Leader**：当Broker正常关闭时，该Broker上的所有Leader副本都会下线，因此，需要为受影响的分区执行相应的Leader选举
 
 这4类选举策略的大致思想都是类似的，即从AR中挑选首个在ISR中的副本，作为新Leader。当然，个别策略有些微小差异。
 
 ### 3.4 Kafka 的哪些场景使用了零拷贝（Zero Copy）？
 
-​        Zero Copy时特别容易被问到的高阶题目。在Kafka中，体现Zero Copy使用场景的地方有两处：基于mmap的索引和日志文件读写所用的TransportLayer
+​        Zero Copy是特别容易被问到的高阶题目。在Kafka中，体现Zero Copy使用场景的地方**有两处：基于mmap的索引和日志文件读写所用的TransportLayer**
 
-* **基于mmap的索引**：索引都是基于 ***MappedByteBuffer*** 的，也就是让用户态和内核态共享内核态的数据缓冲区，此时，数据不需要复制到用户空间。不过，mmap虽然避免了不必要的拷贝，但不一定就能保证很高的性能。在不同的操作系统下，mmap的创建和销毁成本可能是不一样的。很高的创建和销毁开销会抵消Zero Copy带来的性能优势。由于这种不确定性，在Kafka中，只有索引应用了mmap，最核心的日志并未使用mmap机制
-* **TransportLayer**：TransportLayer 时Kafka 传输层的接口。它的某个实现类使用了 *FileChannel* 的 **transferTo** 方法。该方法底层使用 **sendfile** 实现了Zero Copy。对Kafka而言，如果 *I/O* 通道使用普通的 PLAINTEXT，那么kafka 就可利用Zero Copy 特性，直接将页缓存中的数据发送到网卡的Buffer中，避免中间的多次拷贝。相反，如果 *I/O* 通道启用了SSL，那么Kafka便无法利用Zero Copy特性了
+* **基于mmap的索引**：索引都是基于 ***MappedByteBuffer*** 的，也就是让用户态和内核态共享内核态的数据缓冲区，此时，数据不需要复制到用户空间。不过，mmap虽然避免了不必要的拷贝，但不一定就能保证很高的性能。在不同的操作系统下，mmap的创建和销毁成本可能是不一样的。很高的创建和销毁开销会抵消Zero Copy带来的性能优势。由于这种不确定性，在Kafka中，**只有索引应用了mmap**，最核心的日志并未使用mmap机制
+* **TransportLayer**：TransportLayer 是 Kafka 传输层的接口。它的某个实现类使用了 ***FileChannel*** 的 **transferTo** 方法。该方法底层使用 **sendfile** 实现了Zero Copy。对Kafka而言，如果 *I/O* 通道使用普通的 PLAINTEXT，那么kafka 就可利用Zero Copy 特性，**直接将页缓存中的数据发送到网卡的Buffer中**，避免中间的多次拷贝。相反，如果 *I/O* 通道**启用了SSL，那么Kafka便无法利用Zero Copy特性了**
 
 ## 4. 深度思考题
 
@@ -141,12 +141,12 @@
 
 ​          Leader/Follower 模型**并没有**规定 Follower 副本不可以对外提供读服务。很多框架都是允许这么做的，只是Kafka最初为了避免不一致性的问题，而采用了让 Leader 统一提供服务的方式。
 
-​          不过，在Kafka 2.4 后，Kafka 提供了有限度的读写分离，也就是说，Follower 副本能够对外提供读服务。
+​          不过，**在Kafka 2.4 后**，Kafka 提供了有限度的读写分离，也就是说，**Follower 副本能够对外提供读服务**。
 
 ​          下面再给出 2.4 版本之前不支持读写分离的理由：
 
-* 场景不适用：读写分离适用于那种读负载很大，而写操作相对不频繁的场景。可Kafka不属于这个场景
-* 同步机制：Kafka采用PULL 方式实现Follower的同步，因此，Follower与Leader存在不一致性窗口。如果允许读Follower副本，就势必要处理消息滞后（Lagging）的问题
+* 场景不适用：读写分离适用于那种读负载很大，而写操作相对不频繁的场景。显然 Kafka 不属于这个场景
+* 同步机制：Kafka采用 **PULL** 方式实现 Follower 的同步。因此，**Follower与Leader存在不一致性窗口**。如果允许读Follower副本，就势必要处理消息滞后（Lagging）的问题 - *【貌似读写分离都存在这样的问题】*
 
 ### 4.2 如何调优Kafka？
 
@@ -160,7 +160,7 @@
 
 ### 4.3 Contoller发生网络分区(Network Partitioning)时，Kafka会怎么样？
 
-​          这道题目能够诱发对分布式系统设计、CAP 理论、一致性等多方面的思考。不过，针对故障定位和分析的这类问题。建议你首先言明“实用至上”的观点，即不论怎么进行理论分析，永远都要以实际结果为准。一旦发生 Controller 网络分区，那么，第一要务就是 查看集群是否出现“脑裂”，即同时出现两个甚至是多个 Controller 组件。这可以根据 Broker 端监控指标 ActiveControllerCount 来判断。
+​          这道题目能够诱发对分布式系统设计、CAP 理论、一致性等多方面的思考。不过，针对故障定位和分析的这类问题。建议你首先言明“实用至上”的观点，即：不论怎么进行理论分析，永远都要以实际结果为准。一旦发生 Controller 网络分区，那么，**第一要务就是 查看集群是否出现“脑裂”**，即同时出现两个甚至是多个 Controller 组件。这可以根据 Broker 端监控指标 ActiveControllerCount 来判断。
 
 ​          现在分析下，一旦出现这种情况，Kafka 会怎么样。
 
