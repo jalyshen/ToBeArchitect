@@ -375,26 +375,296 @@ bw.close();
 
 ### 4.3 File 类的常用方法
 
-| 方法声明                 | 功能描述                                                     |
-| ------------------------ | ------------------------------------------------------------ |
-| boolean exists()         | 判断File对象对应的文件或目录是否存在，若存在则返回ture，否则返回false |
-| boolean delete()         | 删除File对象对应的文件或目录，若成功删除则返回true，否则返回false |
-| boolean createNewFile()  | 当File对象对应的文件不存在时，该方法将新建一个此File对象所指定的新文件，若创建成功则返回true，否则返回false |
-| String getName()         | 返回File对象表示的文件或文件夹的名称                         |
-| String getPath()         | 返回File对象对应的路径                                       |
-| String getAbsolutePath() | 返回File对象对应的绝对路径（在Unix/Linux等系统上，如果路径是以正斜线/开始，则这个路径是绝对路径；在Windows等系统上，如果路径是从盘符开始，则这个路径是绝对路径） |
-| String getParent()       | 返回File对象对应目录的父目录（即返回的目录不包含最后一级子目录） |
-| boolean canRead()        | 判断File对象对应的文件或目录是否可读，若可读则返回true，反之返回false |
-| boolean canWrite()       | 判断File对象对应的文件或目录是否可写，若可写则返回true，反之返回false |
-| boolean isFile()         | 判断File对象对应的是否是文件（不是目录），若是文件则返回true，反之返回false |
+| 方法声明                             | 功能描述                                                     |
+| ------------------------------------ | ------------------------------------------------------------ |
+| boolean exists()                     | 判断File对象对应的文件或目录是否存在，若存在则返回ture，否则返回false |
+| boolean delete()                     | 删除File对象对应的文件或目录，若成功删除则返回true，否则返回false |
+| boolean createNewFile()              | 当File对象对应的文件不存在时，该方法将新建一个此File对象所指定的新文件，若创建成功则返回true，否则返回false |
+| String getName()                     | 返回File对象表示的文件或文件夹的名称                         |
+| String getPath()                     | 返回File对象对应的路径                                       |
+| String getAbsolutePath()             | 返回File对象对应的绝对路径（在Unix/Linux等系统上，如果路径是以正斜线/开始，则这个路径是绝对路径；在Windows等系统上，如果路径是从盘符开始，则这个路径是绝对路径） |
+| String getParent()                   | 返回File对象对应目录的父目录（即返回的目录不包含最后一级子目录） |
+| boolean canRead()                    | 判断File对象对应的文件或目录是否可读，若可读则返回true，反之返回false |
+| boolean canWrite()                   | 判断File对象对应的文件或目录是否可写，若可写则返回true，反之返回false |
+| boolean isFile()                     | 判断File对象对应的是否是文件（不是目录），若是文件则返回true，反之返回false |
+| boolean isDirectory()                | 判断File对象对应的是否是目录（不是文件），若是目录则返回true，反之返回false |
+| boolean isAbsolute()                 | 判断File对象对应的文件或目录是否是绝对路径                   |
+| long lastModified()                  | 返回1970年1月1日0时0分0秒到文件最后修改时间的毫秒值          |
+| long length()                        | 返回文件内容的长度                                           |
+| String[] list()                      | 列出指定目录的全部内容，只是列出名称                         |
+| String[] list(FilenameFilter filter) | 接收一个FilenameFilter参数，通过该参数可以只列出符合条件的文件 |
+| File[] listFiles()                   | 返回一个包含了File对象所有子文件和子目录的File数组           |
 
+### 4.4 对当前目录下的txt文件操作-示例
 
+```java
+File file = new File("example.txt");
+System.out.println("文件名称:" + file.getName());
+System.out.println("文件的相对路径:" + file.getPath());
+System.out.println("文件的绝对路径:" + file.getAbsolutePath());
+System.out.println("文件的父路径:" + file.getParent());
+System.out.println(file.canRead() ? "文件可读" : "文件不可读");
+System.out.println(file.canWrite() ? "文件可写": "文件不可写");
+System.out.println(file.isFile() ? "是一个文件" :"不是一个文件");
+System.out.println(file.isDirectory()? "是一个目录":"不是一个目录");
+System.out.println(file.isAbsolute() ? "是绝对路径": "不是绝对路径");
+System.out.println("最后修改时间为:" + file.lastModified());
+System.out.println("文件大小为:" + file.length() + " bytes");
+System.out.println("是否成功删除文件"+file.delete());
+```
+
+### 4.5 遍历目录下的文件
+
+​         File 类中有一个 *list()* 方法，该方法用于遍历某个指定目录下的所有文件的名称。
+
+​         示例：
+
+```java
+File file = new File("/home/tester/cha07");
+if (file.isDirectory()) {
+    String[] fileNames = file.list();
+    Arrays.stream(fileNames).forEach(f -> System.out.println(f));
+}
+```
+
+​        File 类中提供了一个重载的 *list(FilenameFilter filter)* 方法，该方法接收一个 *FilenameFilter* 接口类型的参数，其中定义了一个抽象方法 *accept(File dir, String name)* 用于依次对指定 File 的所有子目录或文件进行迭代。
+
+​        示例：
+
+```java
+File file = new File("/home/tester/cha07");
+if (file.isDirectory()) {
+    String[] fileNames = file.list((dir,name) -> name.endsWith(".txt"));
+    Arrays.stream(fileNames).forEach(f -> System.out.println(f));
+}
+```
+
+### 4.6 递归遍历目录文件
+
+```java
+public static void main(String[] args) {
+    File file = new File("/home/tester/cha07");
+    fileDir(file);
+}
+
+public static void fileDir(File file){
+    File[] listFiles = file.listFiles();
+    for (File file: listFiles) {
+        if (file.isDirectory()){
+            fileDir(file);
+        }
+        System.out.println(file);
+    }
+}
+```
+
+### 4.7 删除文件及目录-递归调用
+
+```java
+public static void main(String[] args){
+    File files = new File("/home/tester/cha07");
+    deleteDir(files);
+}
+
+public static void deleteDir(File files) {
+    File[] listFiles = file.listFiles();
+    for (File file: listFiles) {
+        if (files.isDirectory()){
+            deleteDir(file);
+        }
+        file.delete();
+    }
+    files.delete();
+}
+```
+
+​        Java 中删除目录的操作，是通过 Java 虚拟机直接删除而不走回收站的，文件一旦被删除，就无法恢复了。
 
 ## 5 RandomAccessFile
 
+​        在 IO 包中，提供了一个 RandomAccessFile 类，它不属于流类，但具有读写文件数据的功能，可以随机从文件的任何位置开始并以指定的操作权限（如只读、可读写等）执行读写数据的操作。
+
+### 5.1 RandomAccessFile 构造方法
+
+| 方法声明                                   | 功能描述                                                   |
+| ------------------------------------------ | ---------------------------------------------------------- |
+| RandomAccessFile(File file, String mode)   | 使用参数file指定被访问的文件，并使用mode来指定访问模式     |
+| RandomAccessFile(String name, String mode) | 使用参数name指定被访问文件的路径，并使用mode来指定访问模式 |
+
+​        RandomAccessFile(String name,String mode) 中的参数 ***mode*** 用于指定访问文件的模式，也就是文件的操作权限。
+
+​        参数 mode 取值：
+
+* r：以只读的方式打开文件。如果执行写操作，会报 *IOException* 异常
+* rw：以“读写”的方式打开文件。如果文件不存在，会自动创建文件
+* rws：以“读写”的方式打开文件。与“rw”相比，它要求对文件的**内容或元数据**的每个更新都同步写入到底层的存储设备
+* rwd：以“读写”方式打开。与“rw”相比，它要求对文件的**内容**的每个更新都同步写入到底层的存储设备
+
+### 5.2 原理
+
+​        RandomAccessFile 对象包含了一个记录指针来标识当前读写处的位置。
+
+1. 当新建 RandomAccessFile 对象时，该对象的文件记录指针会在文件开始处（即标识为 0 的位置）
+2. 当读写了 n 个字节后，文件记录指针会向后移动 n 个字节
+3. 除了按顺序读写外，RandomAccessFile 对象还可以自由的移动记录指针，既可以向前移动，也可以向后移动
+
+### 5.3 RandomAccessFile 常用方法
+
+| 方法声明                       | 功能描述                                             |
+| ------------------------------ | ---------------------------------------------------- |
+| long  getFilePointer()         | 返回当前读写指针所在的位置                           |
+| void seek(long pos)            | 设定读写指针的位置，与文件开头相隔pos个字节数        |
+| int skipBytes(int n)           | 使读写指针从当前位置开始，跳过 n 个字节              |
+| void write(byte[] b)           | 将指定的字节数组写入到这个文件，并从当前文件指针开始 |
+| void setLength(long newLength) | 设置此文件的长度                                     |
+| final String readLine()        | 从指定文件当前指针读取下一行内容                     |
+
+​        *seek(long pos)* 方法可以使 RandomAccessFile 对象中的记录指针向前、向后自动移动，通过 getFilePointer() 方法，便可以获取文件当前记录指针的位置。
+
+### 5.4  示例
+
+```java
+RandomAccessFile raf = new RandomAccessFile("time.txt","rw");
+int times = Integer.parseInt(raf.readLine()) - 1;
+if (times > 0) {
+    System.out.println("您还可以试用"+ times+"次！");
+    raf.seek(0);
+    raf.write(times+" ").getBytes();    
+} else {
+    System.out.println("试用次数已经用完！");
+}
+raf.close();
+```
+
+
+
 ## 6 对象序列化
 
+​        对象序列化有什么作用？
+
+​        程序在运行过程中，可能需要将一些数据永久的保存在磁盘上，而数据在 Java 中都是保存在对象当中的。那么要怎么将对象中的数据保存到磁盘上呢？这时候就需要使用 Java 中的对象序列化。
+
+​        **定义**：对象的序列化（Serializable）是指将一个 Java 对象转换成一个 I/O 流中字节序列的过程。
+
+​        **目的**：为了将对象保存到磁盘中，或允许在网络中直接传输对象。
+
+​        对象序列化可以使内存中的 Java 对象转换成为平台无关的二进制流；既可以将这种二进制流持久地保存在磁盘上，又可以通过网络将这种二进制流传输到另一个网络节点；其他程序在获得了这种二进制流后，还可以将它恢复成原来的 Java 对象；这种将 I/O 流中的字节序列恢复为 Java 对象的过程被称为反序列化（Deserialize）。
+
+### 6.1 可序列化类
+
+​        想让某个对象支持序列化，那么这个对象所在的类必须是可序列化的。在Java 中，可序列化类必须实现 *Serializable* 或 *Externalizable* 两个接口之一。
+
+1. 实现 Serializable 接口
+   * 系统自动存储必要信息
+   * Java 内部支持，易实现，只需要实现该接口即可，不需要其他代码支持
+   * 性能较差
+   * 容易实现，实际开发使用较多
+2. 实现 Externalizable 接口
+   * 由程序员决定存储的信息
+   * 接口中提供了两个空方法，实现该接口必须为两个方法提供实现
+   * 性能较好
+   * 编程复杂度大
+
+### 6.2 Serializable实现示例
+
+```java
+public class Person implements Serializable {
+    // 为该类指定一个 serialVersionUID 变量值
+    private static final long serialVersionUID = 1L;
+    // 声明变量
+    private int id;
+    private String name;
+    private int age;
+    //...  getter & setter
+}
+```
+
+1. 指定类实现序列化接口
+2. 标识 Java 类的序列化版本。如果不显示的定义 *serialVersionUID* 变量值，那么将由 JVM根据类的相关信息计算出一个值
+
+### 6.3 提示
+
+​        *serialVersionUID* 适用于 Java 的序列化机制。在反序列化时，JVM 会把传来的字节流中的 *serialVersionUID* 与本地相应实体类的 *serialVersionUID* 进行比较，如果相同就可以进行反序列化，否则就会出异常。
+
+​        因此，为了在反序列化时确保序列化版本的兼容性，最好在每一个要序列化的类中加入 *private static final long serialVersionUID* 的变量值，具体数值可自定义（默认是 *1L*，系统还可以根据类名、接口名、成员方法及属性等生成的一个 64 位 的哈希字段）。这样，某个对象被序列化后，即使它所对应的类被修改了，该对象也依然可以被正确的反序列化。
+
 ## 7 NIO
+
+​        从 JDK1.4 开始，Java提供了一系列改进的用于处理输入/输出的新功能。这些功能被称之为NIO （new I/O）。
+
+​        NIO 采用内存映射文件的方式来处理输入/输出，它将文件或文件的一段区域映射到内存，这样就可以像访问内存一样来访问文件了。
+
+​        在 NIO 中，使用的是 Channel 和 Buffer。
+
+​        数据总是从通道读入缓冲器，或从缓冲器写入通道。
+
+### 7.1 NIO相关包
+
+* **java.nio**：主要包含各种与 Buffer 相关的类
+* **java.nio.channnels**：主要包含与 Channel 和 Selector（多线程相关选择器） 相关的类
+* **java.nio.channels.spi**：主要包含与 Channel 相关的服务提供者编程接口
+* **java.nio.charset**：主要包含与字符集相关的类
+* **java.nio.charset.spi**：主要包含与字符集相关的服务提供者编程接口
+
+### 7.2 NIO 三大核心
+
+![9](./images/Stream_Arch/9.jpg)
+
+* **Buffer**：Buffer 本质是一个数组缓冲区，读入或者写入到 Channel 中的所有对象都会先放在 Buffer 中
+* **Channel**：Channel 是对传统的输入/输出的模拟，在NIO中，所有的数据都需要通过通道流的形式传输
+* **Selecter**：Selecter 用于监听多个通道的事件（例如：连接打开、数据到达等），主要用户多个线程处理
+
+#### 7.2.1 Buffer
+
+​        Java NIO 中的 Buffer 用于和NIO中的 Channel 进行交互，交互时数据会从 Channel 读取到 buffer，或从 buffer 写入到 Channel 中。
+
+![10](./images/Stream_Arch/10.jpeg)
+
+​        Buffer 类似于一个数组，它可以保存多个**类型相同**的数据。
+
+​        Buffer 是一个抽象类，其子类有 ByteBuffer，CharBuffer、DoubleBuffer、FloatBuffer、IntBuffer、LongBuffer 和 ShortBuffer。
+
+​        Buffer 子类中最常用的是ByteBuffer 和 ChartBuffer。
+
+​        如何使用Buffer呢？
+
+* Buffer 类的子类中并没有提供构造方法，因此不能通过构造方法来创建对象。
+* 创建 Buffer 对象，通常会通过子类中的 ***static xxxBuffer allocate(int capacity).  方法来实现（其中，xxx表示不同的数据类型，而 capacity 表示容量）
+
+#### 7.2.2 Buffer 三个重要概念
+
+* **capacity（容量）**
+
+  缓冲器的 **capacity（容量）表示该 buffer 的最大数据容量**，即最多可以存储多少数据。缓冲器的容量值不能为负数，也不能够改变。
+
+* **limit（界限）**
+
+  **limit 表示 buffer 容器中不可被读取的区域的第一个索引**，即位于 buffer 容器中索引为 0 到 limit 之间的区域都可以进行读取操作。缓冲器的 **limit 值从不为负，也从不大于其容量**。
+
+* **position（位置）**
+
+  用于指定下一个可以被读写的缓冲器位置索引。新创建的 Buffer 对象，position 的默认值为 0，每进行一次读取或写入操作，position 的值都会自动向后移动一步。
+
+#### 7.2.3 Buffer 常用方法
+
+| 方法声明                         | 功能描述                                                     |
+| -------------------------------- | ------------------------------------------------------------ |
+| int capacity()                   | 获取缓冲区的大小                                             |
+| Buffer clear()                   | 清除缓冲区，将position设置为0，limit设置为capacity           |
+| Buffer flip()                    | 反转缓冲区，先将limit设置为当前position位置，然后再将position设置为0 |
+| boolean hasRemaining()           | 判断当前位置（position）和界限（limit）之间是否还有元素      |
+| int limit()                      | 获取Buffer的limit位置                                        |
+| Buffer limit(int newLimit)       | 设置 limit 的值，并返回一个新的 limit 缓冲区对象             |
+| Buffer mark()                    | 设置 Buffer 的标记（mark），只能在 0 与 position 之间做标记  |
+| int position()                   | 获取 Buffer 中 position 的值                                 |
+| Buffer position(int newPosition) | 设置 Buffer 的 position，并返回位置被修改之后的Buffer对象    |
+| int remaining()                  | 获取当前位置和界限之间的元素个数                             |
+| Buffer reset()                   | 将此缓冲区的位置重置为先前标记的位置                         |
+| Buffer rewind()                  | 倒带缓冲区，将 position 设置为0，并取消设置的标记            |
+
+#### 7.2.4 Channel
+
+
 
 ## 8 NIO 2
 
