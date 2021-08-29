@@ -631,7 +631,7 @@ public class Person implements Serializable {
 * Buffer 类的子类中并没有提供构造方法，因此不能通过构造方法来创建对象。
 * 创建 Buffer 对象，通常会通过子类中的 ***static xxxBuffer allocate(int capacity).  方法来实现（其中，xxx表示不同的数据类型，而 capacity 表示容量）
 
-#### 7.2.2 Buffer 三个重要概念
+##### 7.2.1.1 Buffer 三个重要概念
 
 * **capacity（容量）**
 
@@ -645,7 +645,7 @@ public class Person implements Serializable {
 
   用于指定下一个可以被读写的缓冲器位置索引。新创建的 Buffer 对象，position 的默认值为 0，每进行一次读取或写入操作，position 的值都会自动向后移动一步。
 
-#### 7.2.3 Buffer 常用方法
+##### 7.2.1.2 Buffer 常用方法
 
 | 方法声明                         | 功能描述                                                     |
 | -------------------------------- | ------------------------------------------------------------ |
@@ -662,9 +662,139 @@ public class Person implements Serializable {
 | Buffer reset()                   | 将此缓冲区的位置重置为先前标记的位置                         |
 | Buffer rewind()                  | 倒带缓冲区，将 position 设置为0，并取消设置的标记            |
 
-#### 7.2.4 Channel
+#### 7.2.2 Channel
+
+​        Channel 可以异步的执行 I/O 读写操作。
+
+​        **Channel 的读写操作是双向的**，既可以从 Channel 中读取数据，又可以写数据到 Channel，而**流的读写操作通常都是单向的**。
+
+​        Channel 可以直接将指定文件的部分或者全部直接映射成 Buffer。
+
+​        Channel 只能与 Buffer 进行交互，程序不鞥直接读写 Channel 中的数据。
+
+##### 7.2.2.1 主要实现类
+
+​        Channel 接口的实现类主要包括 DatagramChannel、FileChannel、Pipe.SinkChannel、Pipe.SourceChanne、ServerSocketChannel、SocketChannel 等。
+
+* **DatagramChannel**： 用于支持 **UDP** 网络通信
+* **FileChannel**：用于从文件中读取数据
+* **Pipe.SinkChannel 和 Pipe.SourceChanne**： 用于支持线程之间的通信
+* **ServerSocketChannel 和 SocketChannel**： 用于支持 **TC P** 网络通信
 
 
+
+​        Channel 对象并不是通过构造方法来创建的，而是通过传统 I/O 的 *getChannel()* 方法来获取对应的 Channel。
+
+​        不同的流，所获取的 Channel 是不同的，例如 FileInputStream 和 FileOutputStream 获取的是 FileChannel，同时还可以使用 RandomAccessFile 获取该对象。
+
+​        PipedInputStream 和 PipedOutputStream 所获得的是 Pipe.SinkChannel 和  Pipe.SourceChannel。
+
+##### 7.2.2.2 Channel - FileChannel常用方法
+
+| 方法声明                                                     | 功能描述                                                     |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| MappedByBuffer map(MapMode mode, long position, long size)   | 将该通道文件的区域直接映射到内存中。其中，第一个参数用于执行映射时的模式，包含**只读、读写**等模式；第二个参数，表示映射区域开始的文件中的位置；第三个参数，表示要映射区域的大小 |
+| long position()                                              | 返回该通道的文件位置                                         |
+| int read(ByteBuffer dst)                                     | 从第一个通道读取一个字节序列到给定的缓冲区                   |
+| int read(ByteBuffer dst, long position)                      | 从给定的文件位置开始，从这个通道读取一个字节序列到给定的缓冲区 |
+| long read(ByteBuffer[] dsts, int offset,  int length)        | 从这个通道读取一个字符序列到给定的缓冲区的子序列             |
+| long size()                                                  | 返回该通道文件的当前大小                                     |
+| long transferTo(long position, long count, WritableByteChannel target) | 读取该通道文件中给定位置的字节数，并将它们写入目标通道       |
+| int write(ByteBuffer src)                                    | 从给定的缓冲区写入这个通道的字节序列                         |
+| long write(ByteBuffer[] srcs, int offset, int length)        | 从给定缓冲区的子序列中写入该通道的字节序列                   |
+| int write(ByteBuffer src, long position)                     | 从给定的缓冲区开始，从给定的文件位置开始向该通道写入一个字节序列 |
+
+##### 7.2.2.3 FileChannel拷贝文件示例
+
+```java
+RandomAccessFile infile = new RandomAccessFile("source/src.jpg", "rw");
+FileChannel inChannel = infile.getChannel();
+RandomAccessFile outfile = new RandomAccessFile("target/dest.jpg","rw");
+FileChannel outChannel = outfile.getChannel();
+// 使用 transferTo() 方法进行整体复制
+long transferTo = inChannel.transferTo(0, inChannel.size(), outChannel);
+if (transferTo > 0) {
+    System.out.println("复制成功")；
+}
+infile.close();
+inChannel.close();
+outfile.close();
+outChannel.close();
+```
 
 ## 8 NIO 2
 
+​        JDK 7 引入了新的 I/O API，对原有 I/O API 中的功能进行改进，这个改进之后的 NIO 就称为 NIO 2。
+
+​        NIO 2 最大的改进是提供了全面的文件输入/输出以及文件系统的访问与支持，并且增加了 java.nio.file 包及其子包，而且还提供基于异步Channel的输入/输出。
+
+### 8.1 Path 接口
+
+​        Path 接口是一个共用在文件系统中定位文件的对象，通常表示一个依赖于系统的文件路径。
+
+​        除此之外，NIO 2 还提供了 ***Paths*** 和 ***Files*** 两个工具类。
+
+* Paths 类中提供了两个返回 Path 的静态方法，通过这两个方法可以创建 Path 对象；
+
+* Files 类中提供了大量的静态方法来操作文件
+
+#### 8.1.1 Path接口常用方法
+
+| 方法声明                       | 功能描述                                                     |
+| ------------------------------ | ------------------------------------------------------------ |
+| boolean endsWith(String other) | 判断当前路径是否以指定的字符串结尾                           |
+| Path getName(int index)        | 返回次路径的名称元素作为路径对象                             |
+| int getNameCount()             | 返回路径中名称元素的数量                                     |
+| path getParent()               | 返回父路径，如果次路径没有父路径，则返回null                 |
+| Path getRoot()                 | 返回该路径的根组件作为路径对象，如果此路径没有根组件，则返回 null |
+| Path toAbsolutePath()          | 返回表示此路径的绝对路径的路径对象                           |
+| URI toUri()                    | 返回表示此路径的 URI 地址                                    |
+
+#### 8.1.2 示例
+
+```java
+Path path = Paths.get("/home/tester/test.txt");
+System.out.println("path的根路径：" + path.getRoot());
+System.out.println("path的父路径：" + path.getParent());
+System.out.println("path中的路径名称数：" + path.getNameCount());
+for (int i=0; i< pat.getNameCount(); i++ ){
+    Path name = path.getName(i);
+    System.out.println("索引为" + i + " 的路径的名称为： " + name);
+}
+System.out.println("path的URI路径为：" + path.toUri());
+System.out.println("path的绝对路径：" + path.toAbsolutePath());
+```
+
+​        示例中首先使用 Paths 的 get() 方法创建了 Path 对象，然后分别使用 Path 对象中国呢的各种方法输出对象中的路径信息。
+
+### 8.2 Files工具类常用方法
+
+| 方法声明                                                     | 功能描述                                                     |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| static Path createDirectories(Path dir, FileAttribute<?>... attrs) | 创建多级文件目录                                             |
+| static Path createFile(Path path, FileAttribute<?>... attrs) | 创建一个新的空文件，如果文件已经存在，则创建失败             |
+| static Path copy(Path source, Path target, CopyOption... options) | 该文件将一个文件复制到目标文件，并使用选项参数指定如何执行复制 |
+| static List<String> readAllLines(Path path)                  | 从文件中读取所有行                                           |
+| static long size(Path path)                                  | 返回文件的大小（**以字节为单位**）                           |
+| static Stream<Path> list(Path dir)                           | 将指定路径转换为Stream流对象                                 |
+| static Path write(Path path, Iterable<? extends CharSequence> lines, OpenOption... options ) | 将文本行写入文件，并传入指定的写入模式                       |
+
+#### 8.2.1 示例
+
+```java
+Path directoryPath = Paths.get("/home/tester/sample");
+Files.createDirectories(directoryPath);
+System.out.println("目录创建成功!");
+Path filePath = Paths.get("/home/tester/test.txt");
+Files.createFile(filePath);
+List<String> list = new ArrayList<String>();
+list.add("这是一个测试文件");
+Files.write(filePath, list, StandardOpenOption.APPEND);
+List<String> lines = Files.readAllLines(filePath);
+System.out.println("文件的大小为：" + Files.size(filePath));
+System.out.println("文件中的内容为：" + lines);
+```
+
+​        示例中演示了Files工具类的一些用法，包括文件的创建、写入、读取等功能。
+
+关于Files类中更多方法的使用，读者可查找官方文档来学习。
