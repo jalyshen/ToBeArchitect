@@ -618,7 +618,7 @@ public class Person implements Serializable {
 
 ​        Java NIO 中的 Buffer 用于和NIO中的 Channel 进行交互，交互时数据会从 Channel 读取到 buffer，或从 buffer 写入到 Channel 中。
 
-![10](./images/Stream_Arch/10.jpeg)
+<img src="./images/Stream_Arch/10.jpeg" alt="10" style="zoom:50%;" />
 
 ​        Buffer 类似于一个数组，它可以保存多个**类型相同**的数据。
 
