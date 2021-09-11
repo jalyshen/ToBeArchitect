@@ -26,7 +26,7 @@
 
 ![3](./images/Spark_memory_mgr_theory/3.png)
 
-* **Storage**：用于 broadcast/cache/persist 数据的存储
+* **Storage**：用于 broadcast/cache/persist 数据的存储 
 
 * **Execution**：用于 shuffle，例如 join/agg/sort 等操作，都是在这部分内存中执行的
 
