@@ -189,13 +189,13 @@ public class Application1 {
 
 ​        当在 ***TransactionConfiguration*** 这个类上面加上 ***@EnableTransactionManagement*** 注解之后，再执行 Application1 的 main() 方法，可以看到数据没有插入即事务被回滚了。
 
-​        如果使用的是**springboot框架，它会自动开启了事务管理**。可以从框架源码里面看一下springboot框架的启动类都会加上 @SpringBootApplication 注解，而 @SpringBootApplication注解其实是 @EnableAutoConfiguration 注解和其他注解的组合：
+​        如果使用的是**springboot框架，它会自动开启了事务管理**。可以从框架源码里面看一下springboot框架的启动类都会加上 ***@SpringBootApplication*** 注解，而 @SpringBootApplication注解其实是 @EnableAutoConfiguration 注解和其他注解的组合：
 
 ![2](./images/Spring_at_Transaction/2.jpeg)
 
 ![3](./images/Spring_at_Transaction/3.jpeg)
 
-​        而 @EnableAutoConfiguration 注解使用了@Import来引入 **AutoConfigurationImportSelector.class** 选择器。查看 
+​        而 @EnableAutoConfiguration 注解使用了 **@Import** 来引入 **AutoConfigurationImportSelector.class** 选择器。查看 
 AutoConfigurationImportSelector.class 的源码，在 selectImports 方法中找到了 *getAutoConfigurationEntry* 方法的调用：
 
 ![4](./images/Spring_at_Transaction/4.jpeg)
@@ -204,7 +204,7 @@ AutoConfigurationImportSelector.class 的源码，在 selectImports 方法中找
 
 ![5](./images/Spring_at_Transaction/5.jpeg)
 
-​        进入 getCandidateConfigurations 方法，可以看到它会去读**spring.factories**文件：
+​        进入 getCandidateConfigurations 方法，可以看到它会去读 **spring.factories** 文件：
 
 ![6](./images/Spring_at_Transaction/6.png)
 
@@ -263,13 +263,13 @@ public class Application2 {
 
 ​        因为save2方法使用了try/catch捕获了异常，所以即使标注了@Transactional，这个方法也还是没回滚。
 
-​        可以点进去@Transactional看下它的具体内容，可以看到它有一个 rollbackFor 属性。看下它的注释：
+​        可以点进去@Transactional看下它的具体内容，可以看到它有一个 **rollbackFor** 属性。看下它的注释：
 
 ![10](./images/Spring_at_Transaction/10.jpeg)
 
 ​        注释里面提到，***默认情况下，当发生 Error 或者 RuntimeException 的时候，才会回滚***。
 
-​        而save2方法上面标注的@Transactional并没有指定 rollbackFor 属性，而且save2里面的异常被我们捕获了且没有再抛出来，所以save2没有回滚。
+​        而save2方法上面标注的@Transactional并没有指定 **rollbackFor** 属性，而且save2里面的异常被我们捕获了且没有再抛出来，所以save2没有回滚。
 
 ### 2.3 标注了@Transactional的方法发生了非 Error 或者 RuntimeException
 
@@ -331,7 +331,7 @@ public class Application3 {
 
 ​        ***NOTSUPPORT*** 表示不支持事务，即使当前有事务，也不会使用事务。
 
-​        所以当 propagation = Propagation.NOT_SUPPORTED 的时候，不会使用事务。所以异常发生的时候，也就不会回滚。可以试验一下， 在 UserService 里面添加 save4 方法，在它上面声明@Transactional注解，并且设置 propagation = Propagation.NOT_SUPPORTED：
+​        所以当 ***propagation = Propagation.NOT_SUPPORTED*** 的时候，**不会使用事务**。所以异常发生的时候，也就不会回滚。可以试验一下， 在 UserService 里面添加 save4 方法，在它上面声明@Transactional注解，并且设置 propagation = Propagation.NOT_SUPPORTED：
 
 ```java
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -364,7 +364,7 @@ public class Application4 {
 
 ### 2.5 标注了@Transactional的方法的事务传播类型propagation配置成了NEVER
 
-​        ***NEVER*** 表示不支持事务，如果有事务则会报错
+​        ***NEVER*** 表示**不支持事务**，如果<font color='red'>**有事务则会报错**</font>
 
 ​        可以试验一下， 在 UserService 里面添加 save5 方法，在它上面声明@Transactional注解，并且设置 propagation = Propagation.NEVER：
 
@@ -476,11 +476,13 @@ public class Application7 {
 
 ​        这是因为， save7 方法没有标注@Transactional注解，它内部调用 save72()其实可以看做是 this.save72() ，**这里的this其实是个普通对象，没有被AOP动态代理增强过**。所以 save72()出现异常的时候没有回滚。
 
-​        那么其实我们也可以知道，如果save7和sav72上面都有@Transactional注解的话，事务最终会回滚，并不是因为save72上面的注解生效了，而是因为save7上面的注解生效了，save72回滚只不过是因为被包在了save7的事务里面，是在整个大事务里面回滚的。
+​        那么其实也可以知道，如果save7和sav72上面都有@Transactional注解的话，事务最终会回滚，并不是因为save72上面的注解生效了，而是因为save7上面的注解生效了，save72回滚只不过是因为被包在了save7的事务里面，是在整个大事务里面回滚的。
 
 ### 2.8 标注了@Transactional的方法A的propagation配置成了REQUIRE，标注了@Transactional的方法B的propagation配置成了REQUIRE_NEW，方法A调用了方法B
 
-​        REQUIRE表示如果当前有事务，则加入事务；如果当前没事务，则新起一个事务；REQUEIRE_NEW表示不管当前是否有事务，都新起一个事务。
+​        REQUIRE：表示如果当前有事务，则加入事务；如果当前没事务，则新起一个事务；
+
+​        REQUEIRE_NEW：表示不管当前是否有事务，都新起一个事务。
 
 ​        标注了@Transactional的方法A的propagation配置成了REQUIRE，标注了@Transactional的方法B的propagation配置成了REQUIRE_NEW，方法A调用了方法B。那么当A最后因为异常回滚的时候，B不会回滚。
 
