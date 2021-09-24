@@ -8,7 +8,7 @@
 
 JDK8之前的HotSpot JVM的结构（*虚拟机栈与本地方法栈合在一起*）如下：
 
-![](./images_JDK8_memory/Hotspot_JVM_Before8.png)
+![](./images/images_JDK8_memory/Hotspot_JVM_Before8.png)
 
 ​                                                            HotSpot JVM结构（JDK8以前）
 
@@ -20,7 +20,7 @@ JDK8之前的HotSpot JVM的结构（*虚拟机栈与本地方法栈合在一起*
 
 JDK8的内存模型的变化：
 
-![](./images_JDK8_memory/HotSpot_JVM_JDK8.jpg)
+![](./images/images_JDK8_memory/HotSpot_JVM_JDK8.jpg)
 
 ​                                                            JDK8 JVM的内存结构
 
