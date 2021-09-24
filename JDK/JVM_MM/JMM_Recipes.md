@@ -6,17 +6,17 @@
 
 ### 单处理器(Uniprocessors)
 
-如果能保证正在生成的代码只会运行在单个处理器上，那就可以跳过本节的其余部分。因为单处理器保持着明显的顺序一致性，除非对象内存以某种方式与可异步访问的IO内存共享，否则永远都不需要插入屏障指令。采用了特殊映射的java.nio buffers可能会出现这种情况，但也许只会影响内部的JVM支持代码，而不会影响Java代码。而且，可以想象，如果上下文切换时不要求充分的同步，那就需要使用一些特殊的屏障了。
+​        如果能保证正在生成的代码只会运行在单个处理器上，那就可以跳过本节的其余部分。因为单处理器保持着明显的顺序一致性，除非对象内存以某种方式与可异步访问的I/O内存共享，否则永远都不需要插入屏障指令。采用了特殊映射的java.nio buffers 可能会出现这种情况，但也许只会影响内部的JVM支持代码，而不会影响Java代码。而且，可以想象，如果上下文切换时不要求充分的同步，那就需要使用一些特殊的屏障了。
 
 
 
 ### 插入屏障(Inserting Barriers)
 
-当程序执行时碰到了不同类型的存取，就需要屏障指令。几乎无法找到一个“最理想”位置，能将屏障执行总次数降到最小。编译器不知道指定的load或store指令是先于还是后于需要一个屏障操作的另一个load或store指令；如，当volatile store后面是一个return时。最简单保守的策略是为任一给定的load，store，lock或unlock生成代码时，都假设该类型的存取需要“最重量级”的屏障：
+​        当程序执行时碰到了不同类型的存取，就需要屏障指令。几乎无法找到一个“最理想”位置，能将屏障执行总次数降到最小。编译器不知道指定的 ***load*** 或 ***store*** 指令是先于还是后于需要一个屏障操作的另一个 ***load*** 或 ***store*** 指令；如，当volatile store后面是一个return时。最简单保守的策略是为任一给定的 ***load，store，lock*** 或 ***unlock*** 生成代码时，都假设该类型的存取需要“最重量级”的屏障：
 
-1. 在每条volatile store指令之前插入一个StoreStore屏障。(在ia64平台上，必须将该屏障及大多数屏障合并成相应的load或store指令。)
-2. 如果一个类包含final字段，在该类每个构造器的全部store指令之后，return指令之前插入一个StoreStore屏障。
-3. 在每条volatile store指令之后插入一条StoreLoad屏障。注意，虽然也可以在每条volatile load指令之前插入一个StoreLoad屏障，但对于使用volatile的典型程序来说则会更慢，因为读操作会大大超过写操作。或者，如果可以的话，将volatile store实现成一条原子指令（例如x86平台上的XCHG），就可以省略这个屏障操作。如果原子指令比StoreLoad屏障成本低，这种方式就更高效。
+1. 在每条 ***volatile store*** 指令之前插入一个 ***StoreStore*** 屏障。(在ia64平台上，必须将该屏障及大多数屏障合并成相应的load或store指令。)
+2. 如果一个类包含 **final 字段**，在该类每个构造器的全部store指令之后，return指令之前插入一个StoreStore屏障。
+3. 在每条 ***volatile store*** 指令之后插入一条 ***StoreLoad*** 屏障。注意，虽然也可以在每条volatile load指令之前插入一个StoreLoad屏障，但对于使用volatile的典型程序来说则会更慢，因为读操作会大大超过写操作。或者，如果可以的话，将volatile store实现成一条原子指令（例如x86平台上的XCHG），就可以省略这个屏障操作。如果原子指令比StoreLoad屏障成本低，这种方式就更高效。
 4. 在每条volatile load指令之后插入LoadLoad和LoadStore屏障。在持有数据依赖顺序的处理器上，如果下一条存取指令依赖于volatile load出来的值，就不需要插入屏障。特别是，在load一个volatile引用之后，如果后续指令是null检查或load此引用所指对象中的某个字段，此时就无需屏障。
 5. 在每条MonitorEnter指令之前或在每条MonitorExit指令之后插入一个ExitEnter屏障。(根据上面的讨论，如果MonitorExit或MonitorEnter使用了相当于StoreLoad屏障的原子指令，ExitEnter可以是个空操作(no-op)。其余步骤中，其它涉及Enter和Exit的屏障也是如此。)
 6. 在每条MonitorEnter指令之后插入EnterLoad和EnterStore屏障。
