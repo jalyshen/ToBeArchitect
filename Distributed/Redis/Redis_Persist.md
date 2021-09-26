@@ -284,17 +284,17 @@ https://www.cnblogs.com/kismetv/p/9137897.html
   ​        关于文件重写的流程，有亮点需要特别注意：
 
   1. 重写由父进程fork子进程进行
-  2. 重写期间Redis执行的写命令，需要追加到新的AOF文件中，为此Redis引入了aof_rewrite_buf缓存
+  2. 重写期间Redis执行的写命令，需要追加到新的AOF文件中，为此Redis引入了 ***aof_rewrite_buf*** 缓存
 
   ​        对照上面的流程图，文件重写的流程如下：
 
-  1. Redis父进程首先判断当前是否存在正在执行的bgsave/bgrewriteaof的子进程。如果存在，则bgrewriteaof命令直接返回；如果存在bgsave，则等待bgsave执行完成后再执行。这样做的原因主要是因为性能方面的考量
+  1. Redis父进程首先判断当前是否存在正在执行的 ***bgsave / bgrewriteaof*** 的子进程。如果存在，则bgrewriteaof命令直接返回；如果存在 ***bgsave***，则等待 ***bgsave*** 执行完成后再执行。这样做的原因主要是因为性能方面的考量
 
   2. 父进程执行fork操作，创建子进程。这个过程Redis被阻塞
 
-  3. * 父进程fork后，bgrewriteaof命令返回“Backgroud append only file rewrite started”信息并不再阻塞父进程，并可以响应其他命令。Redis的所有写命令依然写入AOF缓冲区，并根据appendfsynce策略同步到硬盘，保证原有AOF机制的正确性
+  3. * 父进程fork后，bgrewriteaof命令返回“Backgroud append only file rewrite started”信息并不再阻塞父进程，并可以响应其他命令。Redis 的**所有写命令依然写入AOF缓冲区**，并根据 appendfsynce 策略同步到硬盘，保证原有AOF机制的正确性
 
-     * 由于fork操作使用写时复制技术，子进程只能共享fork操作时的内存数据。由于父进程依然在响应命令，因此Redis使用AOF重写缓冲区（图中的aof_rewrite_buf）保存着部分数据，防止新AOF文件生成期间丢失这部分数据。也就是说，**bgrewriteaof执行期间，Redis的写命令同时追加到aof_buf和aof_rewrite_buf两个缓冲区**
+     * 由于fork操作使用写时复制技术，子进程只能共享fork操作时的内存数据。由于父进程依然在响应命令，因此Redis使用AOF重写缓冲区（图中的aof_rewrite_buf）保存着部分数据，防止新AOF文件生成期间丢失这部分数据。也就是说，**bgrewriteaof 执行期间，Redis的写命令同时追加到 aof_buf 和aof_rewrite_buf两个缓冲区**
 
   4. 子进程根据内存快照，按照命令合并规则写入到**新的**AOF文件
 
@@ -306,7 +306,7 @@ https://www.cnblogs.com/kismetv/p/9137897.html
 
 * ### 启动时加载
 
-  ​        前面提到过，当AOF开启时，Redis启动时会优先载入AOF文件来恢复数据。只有当AOF关闭时，才会载入RDB文件进行恢复。
+  ​        前面提到过，当AOF开启时，Redis启动时会**优先载入AOF文件**来恢复数据。只有当AOF关闭时，才会载入RDB文件进行恢复。
 
   ​        当AOF开启，且AOF文件存在时，Redis启动日志大约如下：
 
@@ -366,9 +366,9 @@ https://www.cnblogs.com/kismetv/p/9137897.html
 
 * ### 持久化策略选择
 
-  ​        在介绍持久化策略之前，首先要明白无论是RDB还是AOF，持久化的开启都是要付出性能方面代价的：对于RDB持久化，一方面是bgsave在进行fork操作时Redis主进程会阻塞，另一方面，子进程向硬盘写数据也会带来IO压力；对于AOF持久化，向硬盘写数据的频率大大提高(everysec策略下为秒级)，IO压力更大，甚至可能造成AOF追加阻塞问题（后面会详细介绍这种阻塞），此外，AOF文件的重写与RDB的bgsave类似，会有fork时的阻塞和子进程的IO压力问题。相对来说，由于AOF向硬盘中写数据的频率更高，因此对Redis主进程性能的影响会更大。
+  ​        在介绍持久化策略之前，首先要明白无论是RDB还是AOF，持久化的开启都是要付出性能方面代价的：对于**RDB持久化**，一方面是bgsave在进行fork操作时Redis主进程会阻塞，另一方面，子进程向硬盘写数据也会带来IO压力；对于**AOF持久化**，向硬盘写数据的频率大大提高(everysec策略下为秒级)，IO压力更大，甚至可能造成AOF追加阻塞问题（后面会详细介绍这种阻塞），此外，**AOF文件的重写与RDB的bgsave类似，会有fork时的阻塞和子进程的IO压力问题**。相对来说，由于AOF向硬盘中写数据的频率更高，因此对Redis主进程性能的影响会更大。
 
-  ​        在实际生产环境中，根据数据量、应用对数据的安全要求、预算限制等不同情况，会有各种各样的持久化策略；如完全不使用任何持久化、使用RDB或AOF的一种，或同时开启RDB和AOF持久化等。此外，**持久化的选择必须与Redis的主从策略一起考虑**，因为主从复制与持久化同样具有数据备份的功能，而且主机master和从机slave可以独立的选择持久化方案。
+  ​        在实际生产环境中，根据数据量、应用对数据的安全要求、预算限制等不同情况，会有各种各样的持久化策略；如完全不使用任何持久化、使用RDB或AOF的一种，或同时开启RDB和AOF持久化等。此外，**持久化的选择必须与Redis的主从策略一起考虑**，*因为主从复制与持久化同样具有数据备份的功能，而且主机master和从机slave可以独立的选择持久化方案*。
 
   ​        下面分场景来讨论持久化策略的选择。下面的讨论也只是作为参考，实际方案可能更复杂更具多样性。
 
