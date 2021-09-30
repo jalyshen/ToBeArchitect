@@ -55,7 +55,7 @@
 ​        关于副本机制，可以将它理解为 ***Leader - Follower*** 机制，就是多个服务器中有相同数据的多个副本，并且**划分的粒度是分区**。这样的策略就有以下几个问题必须解决：
 
 * 副本之间如何同步？
-  * **ISR机制**：Leader 动态维护一个 ISR (In-Sync Replica) 列表
+  * **ISR机制**：Leader 动态维护一个 ***ISR*** ( *In-Sync Replica* ) 列表
 * Leader故障时，如何选举新的Leader？
   * 引入 ZooKeeper，它是 Kafka 实现副本机制的前提。Broker、Topics、Partitions 的元信息存储在 ZooKeeper 中，Leader 发生故障时，从ISR集合中进行选举新的 Leader
 
