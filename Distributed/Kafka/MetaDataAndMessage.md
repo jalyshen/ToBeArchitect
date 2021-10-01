@@ -4,7 +4,7 @@
 
 
 
-​        Kafka 发送消息时， KafkaProducer 要将此消息追加到指定 Topic 的某个分区的 Leader 副本中，首先需要知道 Topic 的分区数量，经过留由后确定目标分区，之后 KafkaProducer 需要知道目标分区的 Leader 副本所在服务器的地址、端口等信息，才能建立连接，将消息发送到 Kafka 中。因此，在KafkaProducer 中维护了 Kafka 集群的元数据，这些元数据记录了：某个 Topic 中有哪几个分区、每个分区的 Leader 副本分布在哪个节点上、Follower 副本分布在哪些节点上、哪些副本在 ISR 集合中以及这些节点的网络地址、端口。
+​        Kafka 发送消息时， KafkaProducer 要将此消息追加到指定 Topic 的某个分区的 Leader 副本中，**首先**需要知道 Topic 的分区数量，经过留由后确定目标分区，**之后** KafkaProducer 需要知道目标分区的 Leader 副本所在服务器的地址、端口等信息，才能建立连接，将消息发送到 Kafka 中。因此，**在KafkaProducer 中维护了 Kafka 集群的元数据**，这些元数据记录了：某个 Topic 中有哪几个分区、每个分区的 Leader 副本分布在哪个节点上、Follower 副本分布在哪些节点上、哪些副本在 ISR 集合中以及这些节点的网络地址、端口。
 
 ## 1 元数据
 
@@ -326,7 +326,7 @@ public class MemoryRecords implements Records {
 
 ### 2.2 RecordBatch
 
-​        现在聊聊RecordBatch。其实，上面提到的**每个**RecordBatch就是一个 MemoryRecord。
+​        现在聊聊RecordBatch。其实，上面提到的**每个**RecordBatch就是**一个** MemoryRecord。
 
 ```java
 /**
@@ -376,3 +376,4 @@ public final class RecordBatch {
 ```
 
 ​        从上面的流程图可以看到，将消息封装成一个一个的 RecordBatch之后，放到 Deque队列中，一个 RecordAccumulator 由一个至多个的 Dequeue 组成，这样可以减少通信成本，批量发送消息，从而也能提高吞吐量。
+
