@@ -312,7 +312,7 @@ compressableMimeType="text/html,text/xml,text/plain,text/javascript,text/css,app
 <Context docBase="hello" path="/h" reloadable="true"/>
 ```
 
-### 5.7 Value
+### 5.7 Valve
 
 ​        阀门：可以理解成 request 的过滤器，具体配置要基于具体的 Valve 接口的子类。以下即为一个访问日志的Valve：
 
@@ -417,6 +417,186 @@ compressableMimeType="text/html,text/xml,text/plain,text/javascript,text/css,app
 
 
 ## 七. Tomcat 网络通信模型
+
+### 7.1 Tomcat 支持四种线程模型
+
+#### 7.1.1 什么是 I/O
+
+​        I/O 是指为数据传输所提供的输入输出流，其输入输出对象可以是：文件、网络服务、内存等。
+
+![7-1](./images/InsideTomcatAndOptimize/7-1.png)
+
+#### 7.1.2 什么是I/O模型
+
+​        有这么一个问题：假设应用在从硬盘中读取一个大文件，此过程中，CUP会与硬盘一样处于高负载状态吗？
+
+​        答案是：CPU 负载并没有太高的增长。
+
+​        通常情况下，I/O 操作是比较耗时的，所以为了高效的使用硬件，应用程序可以用一个专门的线程进行 I/O 操作，而另外一个线程则利用 CPU 的空闲去做其它计算。这种为了提高应用效率而采用的 I/O 操作方法就是 I/O 模型。
+
+#### 7.1.3 各个I/O 模型简要说明
+
+* **BIO**
+
+  ***阻塞式 I/O***：即 Tomcat 使用传统的 java.io 进行操作。该模式下每个请求都会创建一个线程，对性能开销大，不适合高并发的场景。优点是稳定，适合连接数目小且固定架构
+
+* **NIO**
+
+  ***非阻塞式 I/O***：JDK 1.4 之后实现的新I/O。该模式基于**多路复用**选择器监测连接状态再通知线程处理，从而达到非阻塞的目的。比传统 ***BIO*** 能更好地支持并发性能。
+
+  ***Tomcat 8.0 之后默认采用这个模式***
+
+* **APR**
+
+  ***可移植运行库***：全称是 Apache Portable Runtime，Apache 可移植运行库，是Apache HTTP 服务器的支持库。可以简单的理解为：Tomcat 将以 JNI 的形式调用 Apache HTTP 服务器的核心动态链接库来处理文件读取或网络传出操作。使用需要编译安装 APR 库
+
+* **AIO**
+
+  ***异步非阻塞式I/O***：JDK 7 后支持。与 NIO 不同在于：不需要多路复用选择器，而是请求处理线程执行完成后执行回调机制，已继续执行后续操作。***Tomcat 8 之后支持***
+
+### 7.2 使用指定 IO模型的配置方式
+
+​        修改配置文件 ***server.xml*** 中的 <Connector protocol="HTTP/1.1"> 即可。默认的配置情况是，Tomcat 8.0 之前是 BIO，之后是 NIO。
+
+* BIO
+
+  ```xml
+  protocol="org.apache.coyote.http11.Http11Protocol"
+  ```
+
+* NIO
+
+  ```xml
+  protocol="org.apache.coyote.http11.Http11NioProtocol"
+  ```
+
+* AIO
+
+  ```xml
+  protocol="org.apache.coyote.http11.Http11Nio2Protocol"
+  ```
+
+* APR
+
+  ```xml
+  protocol="org.apache.coyote.http11.Http11AprProtocol"
+  ```
+
+
+
+### 7.3 Tomcat BIO、NIO 实现过程源码分析
+
+#### 7.3.1 BIO 与 NIO 的区别
+
+​        模拟 4 个客户端请求，每个客户端发送 ***50个/秒***  请求，共 200 个请求：
+
+![7-2](./images/InsideTomcatAndOptimize/7-2.png)
+
+* BIO 配置
+
+  ```xml
+  <Connector port="8080"
+             protocol="org.apache.coyote.http11.Http11Protocol"
+             connectionTimeout="20000"
+             redirectPort="8443"
+             compression="on" 
+             compressionMinSize="1024"
+             compressableMimeType="text/html,text/xml,text/plain,text/javascript,text/css,application/x-json,application/json,application/x-javascript"   
+             maxThreads="500" 
+             minSpareThreads="1"/>
+  ```
+
+* NIO 配置
+
+  ```xml
+  <Connector port="8080" 
+             protocol="org.apache.coyote.http11.Http11NioProtocol"
+             connectionTimeout="20000"
+             redirectPort="8443"
+             compression="on" 
+             compressionMinSize="1024"
+                 compressableMimeType="text/html,text/xml,text/plain,text/javascript,text/css,application/x-json,application/json,application/x-javascript"    
+             maxThreads="500" 
+             minSpareThreads="1"/>
+  ```
+
+  
+
+* 演示数据
+
+  | 场景         | 每秒提交数 | BIO执行线程         | NIO执行线程     |
+  | ------------ | ---------- | ------------------- | --------------- |
+  | 预测         | 200        | 200 线程            | 20 线程         |
+  | 实验环境     | 200        | 55 wait 个线程      | 23 个线程       |
+  | 模拟生产环境 | 200        | 229 个 running 线程 | 20 个 wait 线程 |
+
+* 生成环境重要因素
+
+  1. 网络
+  2. 程序执行 业务用时
+  3. 源码地址：https://github.com/org-hejianhui/bit-bigdata-transmission
+
+* BIO 线程模型
+
+  ![7-3](./images/InsideTomcatAndOptimize/7-3.png)
+
+* BIO 源码
+
+  1. 线程组
+
+     Accept 线程组： acceptorThreadCount 默认1 个
+
+     exec 线程组： maxThread
+
+     JIoEndPoint：Acceptor extends Runnable，SocketProcessor extends Runnable
+
+  2. 流程
+
+     ![7-4](./images/InsideTomcatAndOptimize/7-4.jpeg)
+
+* BIO 小结
+
+  线程数量会受到：***客户端阻塞、网络延迟、业务处理慢***（导致线程数量多）等因素影响
+
+* NIO 线程模型
+
+  ![7-5](./images/InsideTomcatAndOptimize/7-5.png)
+
+  Accept 线程组：默认两个轮询器
+
+  Poller Selector PollerEvent 轮询线程状态
+
+  SocketProcessor
+
+* NIO 流程
+
+  ![7-6](./images/InsideTomcatAndOptimize/7-6.jpeg)
+
+* NIO 小结
+
+  线程数量会受到 ***业务处理慢***（导致线程数量多）的影响
+
+### 7.4 Tomcat Connector 并发参数解读
+
+| 名称                               | 描述                                                         |
+| ---------------------------------- | ------------------------------------------------------------ |
+| acceptCount                        | 等待最大队列（此时，所有线程都在运行）                       |
+| address                            | 绑定客户端特定地址，127.0.0.1                                |
+| bufferSize                         | 每个请求的缓冲区大小。总大小： bufferSize * maxThreads       |
+| compression                        | 是否启用文档压缩                                             |
+| compressableMimeType               | text/html, text/xml, text/plain                              |
+| connectionTimeout                  | 客户发起连接 到 服务器端接收为止，中间最大的等待时间         |
+| connectionUploadTimeout            | upload 情况下连接超时时间                                    |
+| disableUploadTimeout               | true，则使用 connectionTimeout                               |
+| enableLookups                      | 否是禁用 DNS 查询。true，返回域名；false 返回 ip             |
+| keepAliveTimeout                   | 当长连接闲置，指定时间主动关闭连接。前提是客户端请求头带着： head"connection" "keep-alive" |
+| maxKeepAliveRequests               | 最大的 长连接数                                              |
+| maxHttpHeaderSize                  |                                                              |
+| maxSpareThreads                    | BIO 模式下，最多闲置线程数量                                 |
+| maxThreads（执行线程）             | 最大**执行**线程数                                           |
+| minSpareThreads（初始业务线程 10） | BIO 模式下，最小闲置线程数                                   |
+
+
 
 ## 八. Tomcat 类加载机制源码解析
 
@@ -583,3 +763,4 @@ sun.misc.Launcher$ExtClassLoader@2d209079
 ### 8.5 ClassCastException
 
 ​        ClassCastException，在一个类加载器的情况下，一般出现这种错误都会是在转型操作时，比如：A a = (A) method();，很容易判断出来method()方法返回的类型不是类型A，但是在 JavaEE 多个类加载器的环境下就会出现一些难以定位的情况
+
