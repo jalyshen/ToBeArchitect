@@ -20,7 +20,7 @@
 
 ​        大致意思就是：
 
-> 类加载器（class loader）是一个负责加载 Java 类（class）的对象。ClassLoader 类是一个抽象类，需要给出的二进制名称，class loader 尝试定位或者产生一个 class 的数据，一个典型的策略是把二进制名字转换成文件名，然后到文件系统中找到该文件。
+> 类加载器（class loader）是一个负责加载 Java 类（class）的对象。ClassLoader 类是一个抽象类，需要给出的二进制名称，class loader 尝试定位或者产生一个 class 的数据，一个典型的策略是把二进制名字转换成文件名，然后到文件系统中找到该文件（这就是为什么Java中类名和文件名需要一样的原因）。
 
 ​        下面看看 *loadClass()* 方法的具体实现：
 
