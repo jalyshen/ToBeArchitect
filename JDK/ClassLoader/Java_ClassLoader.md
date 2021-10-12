@@ -258,7 +258,7 @@ public class Test {
 Null
 ```
 
-​        可以看出 Test 是由 AppClassLoader 加载器加载的，AppClassLoader 的 Parent 加载器是 ExtClassLoader，但是 ExtClassLoader 的 Parent 是 null。之所以 E x t ClassLoader 的 Parent 是 null，是因为 Bootstrap Loader 是 C++ 写的，按照 Java 的观点来看，逻辑上并不存在 BootstrapLoader 的类实体，所以在 Java 程序代码里试图打印其内容时，就会出现null。
+​        可以看出 Test 是由 AppClassLoader 加载器加载的，AppClassLoader 的 Parent 加载器是 ExtClassLoader，但是 ExtClassLoader 的 Parent 是 null。之所以 ExtClassLoader 的 Parent 是 null，是因为 Bootstrap Loader 是 C++ 写的，按照 Java 的观点来看，逻辑上并不存在 BootstrapLoader 的类实体，所以在 Java 程序代码里试图打印其内容时，就会出现null。
 
 ​        Java 装载类使用“**全盘负责委托机制**”。“**全盘负责**”是指当一个 ClassLoader 装载一个类时，除非显示的使用另一个 ClassLoader，该类所依赖及引用的类也由这个 ClassLoader 载入。“**委托机制**”是指，先委托父类装载器寻找目标类，只有在找不到的情况下才从自己的类路径中寻找并装载目标类。
 
