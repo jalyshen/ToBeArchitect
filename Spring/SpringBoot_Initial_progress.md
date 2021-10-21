@@ -198,5 +198,9 @@ public @interface SpringBootApplication {
 
 ## 五. SpringBoot 启动流程概览图
 
+
+
 ## 六. 深入探索 SpringApplication执行流程
+
+![6-1](./images/SpringBoot_Initial_progress/6-1.png)
 
