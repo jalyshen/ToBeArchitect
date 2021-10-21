@@ -41,13 +41,13 @@
 
 ​        每个文件块，都会把元数据注册到NameNode，而且不管文件大小，这些元数据都需要一定格式的信息，换句话说，不论文件大小，都会占据NameNode相同大小的内存。如果文件小，那么数量就会很大，进而占据大量NameNode的内存空间。
 
-​        举例说明：一个文件块，会占用NameNode大约150字节的内存，那么1亿个小文，就会占用 
+​        举例说明：**一个文件块，会占用NameNode大约150字节的内存**，那么1亿个小文，就会占用 $150 * 10^{9} bytes \thickapprox 150 * 10^6 Mb \thickapprox 150 * 10^3 Gb$。一般的服务器都没有这么多的内存。而目前 Hadoop 的 NameNode 也没有 Cluster 模式。
 
 #### 1.4.2 如何解决影响
 
 * 采用tar归档方式，将小文件归档
 * 采用CombineTextInputFormat
-* 在小文件场景开启JVM重用；如果没有小文件，不要开启JVM重用，因为会一直占用使用到的task卡槽，直到任务完成才释放
+* **在小文件场景开启JVM重用**；如果没有小文件，不要开启JVM重用，因为会一直占用使用到的task卡槽，直到任务完成才释放
 
 ​        JVM重用可以使得JVM实例在同一个job中重新使用N次，N的值可以在Hadoop的mapred-site.xml文件中进行配置。通常在10-20之间：
 
@@ -66,6 +66,20 @@
 #### 1.5.1 shuffle过程
 
 ![2](./images/interview02/2.jpeg)
+
+1. 需要处理的文本文件是 /user/input/ss.txt，约 200M 大小
+
+2. 客户端 submit 前，获取等待处理数据的信息，然后根据参数配置，形成一个任务分配规划，如：分成两个数据包
+
+   ss.txt 0-127M
+
+   ss.txt 128-200M
+
+3. 提交信息
+
+4. 根据配置信息（Yarn RM、Job.xml、Job.split）等计算出 MapTask数量
+
+5. 
 
 ![3](./images/interview02/3.jpeg)
 
@@ -122,7 +136,7 @@
 
 ### 5.1 提前在map进行combine，减少传输的数据量
 
-​        在Mapper加上combiner相当于提前进行reduce，即把一个mapper中相同的key进行了聚合，减少shuffle过程中传输的数据量，以及reducer端的计算量
+​        在Mapper加上 combiner 相当于提前进行reduce，即把一个mapper中相同的key进行了聚合，减少shuffle过程中传输的数据量，以及reducer端的计算量
 
 ​        如果导致数据倾斜的key大量分布在不同的mapper的时候，这种方法就不是很有效了。
 
@@ -130,7 +144,7 @@
 
 * 局部聚合 + 全局聚合
 
-  第一次在map阶段对那些导致了数据倾斜的key加上 1 到 n 的随机前缀，这样本来相同的key也会被分到多个reducer中进行局部聚合，数量就会大大降低
+  第一次，在map阶段，对那些导致了数据倾斜的 key 加上 1 到 n 的随机前缀，这样本来相同的key也会被分到多个reducer中进行局部聚合，数量就会大大降低
 
   第二次mapreduce，去掉key的随机前缀，进行全局聚合
 

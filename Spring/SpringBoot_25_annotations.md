@@ -28,11 +28,11 @@
 
 #### 3.2 @Import
 
-​        这是 Spring 3.0 添加的新注解，用来导入一个或者多个 @Configuration 注解修饰的类，这在 SpringBoot 里应用很多。
+​        这是 Spring 3.0 添加的新注解，**用来导入一个或者多个 @Configuration 注解修饰的类**，这在 SpringBoot 里应用很多。【 *注意，与 @ImportResource 的区别* 】
 
 #### 3.3 @ImportResource
 
-​        这是 Spring 3.0 添加的新注解，用来导入一个或者多个 Spring 配置文件，这对 Spring Boot 兼容老项目非常有用，因为有些配置无法通过 Java Config 的形式来配置，就只能用这个注解来导入（导入传统的xml配置文件）。
+​        这是 Spring 3.0 添加的新注解，**用来导入一个或者多个 Spring 配置文件**，这对 Spring Boot 兼容老项目非常有用，因为有些配置无法通过 Java Config 的形式来配置，就只能用这个注解来导入（导入传统的xml配置文件）。
 
 ### 4. @SpringBootConfiguration
 
@@ -53,7 +53,7 @@ public @interface SpringBootConfiguration {
 
 ### 6. @Conditional
 
-​     这是 Spring 4.0 添加的新注解，用来标识一个 SpringBean 或者 Configuration 配置文件，当满足制定的条件才开启配置。
+​     是 Spring 4.0 添加的新注解，用来标识一个 SpringBean 或者 Configuration 配置文件，当满足指定条件才开启配置。
 
 ### 7. @ConditionalOnBean
 
