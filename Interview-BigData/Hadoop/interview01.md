@@ -75,7 +75,7 @@
 ## 4. 正常工作的集群中，Hadoop都分别需要启动哪些进程，它们的作用分别是什么？
 
 1. **NameNode**：它是hadoop中的主服务器，管理文件系统名称空间和对集群中存储的文件的访问，保存有metadate。
-2. **SecondaryNameNode**：它**不是** NameNode 的冗余守护进程，而是提供周期检查点和清理任务。帮助NN合并editslog，减少NameNode启动时间。
+2. **SecondaryNameNode**：它**不是** NameNode 的冗余守护进程，而是<font color='red'>**提供周期检查点和清理任务**</font>。帮助NameNode合并editslog，减少NameNode启动时间。
 3. **DataNode**：它负责管理连接到节点的存储（一个集群中可以有多个节点）。每个存储数据的节点运行一个datanode守护进程。
 4. **ResourceManager**（JobTracker）：JobTracker负责调度DataNode上的工作。**每个DataNode有一个TaskTracker**，它们执行实际工作。
 5. **NodeManager**：（TaskTracker）执行任务
@@ -88,7 +88,32 @@
 
 ## 6. HDFS 默认 BlockSize 是多大？
 
-​        从 Hadoop 2.x开始，默认是128M。
+​        从 Hadoop 2.x开始，默认是128M （老版本是64M）。
+
+### 6.1 为什么 BlockSize 不能太大，也不能太小？
+
+#### 6.1.1 设置过大
+
+1. 从磁盘传输数据的时间会明显大于寻址时间，导致程序在处理数据块时变得非常慢。
+
+2. MapReduce 中的 map 任务通常一次只处理一个块的数据，如果块过大，运行速度会变得很慢。
+
+#### 6.1.2 设置过小
+
+1. 块设置下了，就会出现大量的小文件，这些小文件会占用 NameNode 中大量的内存来存储元数据，而 NameNode 的内存是有限的
+2. 块笑了，就会增加寻址时间，导致程序一直在找 Block 的开始位置。因此，Block适当设置大一些，可以减少寻址时间，传输一个由多个 Block 组成的文件的时间就主要取决于磁盘的传输速率。
+
+### 6.2 HDFS中 Block 的大小为什么设置为 128M？
+
+1. HDFS 中平均寻址时间大概是 ***10ms***
+
+2. 经过大量的测试发现，***寻址时间为传输时间的 1% 时，时最佳状态***。所以最佳传输时间就是: 10ms/0.01 = 1000ms = 1s
+
+3. 目前磁盘的传输速率普遍为 100MB/s，可以计算得出：
+
+   最佳 Block 大小 = 100 Mb/时* 1s = 100Mb，因此把 Block 大小设置为 128 Mb
+
+4. 实际在工业生产中，磁盘传输速率为 200Mb/s 时，一般设置 Block 大小为 256Mb；同理，如果磁盘传输速率是 400MB/s 时，Block 一般设置为 512Mb
 
 ## 7. 负责 HDFS 数据存储的是哪一部分？
 
@@ -104,7 +129,7 @@
 
 ​        那么，为什么Block的大小不能太大，也不能太小呢？
 
-​        HDFS 的块比磁盘的块大，其目的是为了最小化寻址开销。如果块设置得足够大，从磁盘传输数据的时间会明显大于定位这个块开始位置所需要的时间。所以，传输一个由多个块组成的文件的时间，取决于磁盘传输速率。
+​        **HDFS 的块比磁盘的块大，其目的是为了最小化寻址开销**。如果块设置得足够大，从磁盘传输数据的时间会明显大于定位这个块开始位置所需要的时间。所以，传输一个由多个块组成的文件的时间，取决于磁盘传输速率。
 
 ​        如果寻址时间约为10ms，而传输速率为100M/s，为了使寻址时间仅占传输时间的 1%，要将块大小设置约为100M。默认的块大小是 128M。
 
@@ -133,31 +158,33 @@
 
 1. 客户端通过Distributed FileSystem向NameNode请求下载文件，NameNode通过查询元数据，找到文件块所在的DataNode地址。
 2. 挑选一台DataNode（就近原则，然后随机）服务器，请求读取数据。
-3. DataNode开始传输数据给客户端（从磁盘里面读取数据输入流，以packet为单位来做校验）。
-4. 客户端以packet为单位接收，先在本地缓存，然后写入目标文件。
+3. 向返回的 DataNode 节点请求第一个 Block 数据
+4. DataNode开始传输数据给客户端（从磁盘里面读取数据输入流，以packet为单位来做校验）。客户端以packet为单位接收，先在本地缓存，然后写入目标文件
+5. 客户端根据 DataNode 信息请求后续 Block 的数据，然后重复第 4 步的操作
 
 ## 11. Secondary NameNode 工作机制
 
 ![3](./images/interview01/3.png)
 
-1. 第一阶段：NameNode启动
+### 11.1 第一阶段：NameNode启动
 
-   1.1 第一次启动NameNode格式化后，创建fsimage和edits文件。如果不是第一次启动，直接加载编辑日志和镜像文件到内存。
+1. 第一次启动NameNode格式化后，创建fsimage和edits文件。如果不是第一次启动，直接加载编辑日志和镜像文件到内存。
 
-   1.2 客户端对元数据进行增删改的请求。
+2. 客户端对元数据进行增删改的请求。
 
-   1.3 NameNode记录操作日志，更新滚动日志。
-   1.4 NameNode在内存中对数据进行增删改查。
+3. NameNode记录操作日志，更新滚动日志。
+4. NameNode在内存中对数据进行增删改查。
 
-2. 第二阶段：Secondary NameNode工作
-   2.1 Secondary NameNode询问NameNode是否需要checkpoint。直接带回NameNode是否检查结果。
-   2.2 请求执行checkpoint。
-   2.3 NameNode滚动正在写的edits日志。
-   2.4 先将滚动前的编辑日志和镜像文件拷贝到Secondary NameNode。
-   2.5 Secondary NameNode加载编辑日志和镜像文件到内存，并合并。
-   2.6 生成新的镜像文件fsimage.chkpoint。
-   2.7 拷贝fsimage.chkpoint到NameNode。
-   2.8 NameNode将fsimage.chkpoint重新命名成fsimage。
+### 11.2 第二阶段：Secondary NameNode工作
+
+1. Secondary NameNode询问NameNode是否需要checkpoint。直接带回NameNode是否检查结果。
+2. 请求执行checkpoint。
+3. NameNode滚动正在写的edits日志。
+4. 先将滚动前的编辑日志和镜像文件拷贝到Secondary NameNode。
+5. Secondary NameNode加载编辑日志和镜像文件到内存，并合并。
+6. 生成新的镜像文件fsimage.chkpoint。
+7. 拷贝fsimage.chkpoint到NameNode。
+8. NameNode将fsimage.chkpoint重新命名成fsimage。
 
 ## 12 NameNode 与 Second NameNode 的区别和联系
 
@@ -214,7 +241,7 @@
 
 ​        ZKFailoverController主要职责
 
-1. **健康监测**：周期性的向它监控的NN发送健康探测命令，从而来确定某个NameNode是否处于健康状态，如果机器宕机，心跳失败，那么zkfc就会标记它处于一个不健康的状态。
-2. **会话管理**：如果NN是健康的，zkfc就会在zookeeper中保持一个打开的会话，如果NameNode同时还是Active状态的，那么zkfc还会在Zookeeper中占有一个类型为短暂类型的znode，当这个NN挂掉时，这个znode将会被删除，然后备用的NN，将会得到这把锁，升级为主NN，同时标记状态为Active。
-3. 当宕机的NN新启动时，它会再次注册zookeper，发现已经有znode锁了，便会自动变为Standby状态，如此往复循环，保证高可靠，需要注意，目前仅仅支持最多配置2个NN。
-4. **master选举**：如上所述，通过在zookeeper中维持一个短暂类型的znode，来实现抢占式的锁机制，从而判断那个NameNode为Active状态
+1. **健康监测**：周期性的向它监控的 NameNode 发送健康探测命令，从而来确定某个 NameNode 是否处于健康状态，如果机器宕机，心跳失败，那么 zkfc 就会标记它处于一个不健康的状态。
+2. **会话管理**：如果 NameNode 是健康的，zkfc 就会在 zookeeper 中保持一个打开的会话，如果 NameNode 同时还是  **Active** 状态的，那么 zkfc 还会在 Zookeeper 中占有一个类型为短暂类型的 znode，当这个 NameNode 挂掉时，这个 znode 将会被删除，然后备用的 NameNode，将会得到这把锁，升级为主 NameNode，同时标记状态为Active。
+3. 当宕机的 NameNode 重新启动时，它会再次注册 zookeper，发现已经有 znode 锁了，便会自动变为 **Standby** 状态，如此往复循环，保证高可靠，需要注意，目前仅仅支持最多配置 ***2个*** NameNode。
+4. **master选举**：如上所述，通过在 zookeeper 中维持一个**短暂类型**的 znode，来实现抢占式的锁机制，从而判断那个NameNode为 Active 状态
