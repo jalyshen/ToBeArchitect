@@ -6,9 +6,9 @@
 
 ## 1. 定义
 
-​        接口隔离原则（Interface Segregation Principle，ISP）要求程序员尽量将臃肿庞大的接口拆分成更小的和更具体的接口，让接口中只包含客户管兴趣的方法。
+​        接口隔离原则（Interface Segregation Principle，ISP）要求程序员尽量将臃肿庞大的接口拆分成**更小**的和**更具体**的接口，让接口中只包含客户感兴趣的方法。
 
-​        接口隔离原则的一个定义是：客户端不应该被迫依赖于它不是用的方法（Clients should NOT be forced to depend on methods they do NOT use）。
+​        接口隔离原则的一个定义是：客户端不应该被迫依赖于它不适用的方法（Clients should NOT be forced to depend on methods they do NOT use）。
 
 ​        另一个定义是：一个类对另一个类的依赖应该建立在最小的接口上（The dependency of one class to another one should depend on the smallest possible interface）。
 
