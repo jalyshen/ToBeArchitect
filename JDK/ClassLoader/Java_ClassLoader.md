@@ -2,7 +2,7 @@
 
 原文：https://www.toutiao.com/a6597231439375237646/?channel=&source=search_tab
 
-​        Java中的所有类，必须被装载到 JVM 中才能运行，这个装载工作是由 JVM 中的类装载器完成的，类装载器所做的工作实质上是把类文件冲硬盘读取到内存中，JVM 在加载类的时候，都是通过 **ClassLoader** 的 *loadClass()* 方法来加载 class 的，*loadClass()* 使用**双亲委派模式**。
+​        Java中的所有类，必须被装载到 JVM 中才能运行，这个装载工作是由 JVM 中的类装载器完成的，类装载器所做的工作实质上是把类文件从硬盘读取到内存中，JVM 在加载类的时候，都是通过 **ClassLoader** 的 *loadClass()* 方法来加载 class 的，*loadClass()* 使用**双亲委派模式**。
 
 ​        为了更好地理解类的加载机制，来深入研究一下 ClassLoader 和它的 *loadClass()* 方法。
 
@@ -85,7 +85,7 @@
   * 调用 *findLoadedClass(String)*  方法检查这个类是否被加载过
   * 使用父加载器调用 *loadClass(String)* 方法，如果父加载器为 Null，类加载器装载VM内置的加载器
   * 调用 *findClass(String)*  方法装载类
-* 如果按照以上的步骤成功的找到对应的类，并且该方法接收的 *resolve* 参数的值为 *true*，那么就调用 *resolveClass(Class)* 方法类处理类。*ClassLoader* 的子类最好覆盖 *findClass(String)* 而不是这个方法 (loadClass)。**除非重写，这个方法默认在整个装载过程中都是同步的（线程安全的）**。
+* 如果按照以上的步骤成功的找到对应的类，并且该方法接收的 *resolve* 参数的值为 *true*，那么就调用 *resolveClass(Class)* 方法类处理类。*ClassLoader* 的**子类最好覆盖 *findClass(String)*** 而不是这个方法 (***loadClass***)。**除非重写，这个方法默认在整个装载过程中都是同步的（线程安全的）**。
 
 ​        了解了设计思路，再来看看源码：
 
