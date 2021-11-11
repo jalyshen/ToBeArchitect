@@ -6,6 +6,8 @@
 
 ## 1. 定义
 
+​        Dependency inversion：依赖倒置
+
 ​        依赖倒置原则的原始定义是：高层模块不应该依赖低层模块，两者都应该依赖其抽象；抽象不应该依赖细节，细节应该依赖抽象（High level modules should NOT depend upon low level modules, Both should depend upon abstractions. Abstractions should NOT depend upon details, Details should depend upon abstractions）。 其核心思想是：**要面向接口编程，不要面向实现类编程** 。
 
 ​        **依赖倒置原则是实现开闭原则的重要途径之一，它降低了客户与实现模块之间的耦合。**
