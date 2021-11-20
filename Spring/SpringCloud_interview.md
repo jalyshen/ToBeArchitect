@@ -139,7 +139,7 @@
 
 ### 2.2 什么是服务注册与发现
 
-​        SpringCloud 框架使用 Eureka 组件来完成服务注册与发现。Eureka 采用 **CS** 的设计架构。Eureka Server 是服务注册的服务器，是注册中心，其他服务启动时需要把自己注册到 Eureka Server来；其他服务集成 Eureka Client，用来把自己注册到 Eureka Serve，并未出与 Server 的心跳。这样，系统的维护人员就可以通过 Eureka Server 来监控系统中各个微服务是否正常运行。
+​        SpringCloud 框架使用 Eureka 组件来完成服务注册与发现。Eureka 采用 **CS** 的设计架构。Eureka Server 是服务注册的服务器，是注册中心，其他服务启动时需要把自己注册到 Eureka Server来；其他服务集成 Eureka Client，用来把自己注册到 Eureka Serve，并维持与 Server 的心跳。这样，系统的维护人员就可以通过 Eureka Server 来监控系统中各个微服务是否正常运行。
 
 * 在服务注册与发现中，有一个注册中心。当服务器启动时，会把当前自己服务器的信息（比如：服务地址、通讯地址等）以**别名**方式注册到注册中心
 * 另一方面（消费者/服务提供者），以该别名的方式去注册中心上获取实际的服务通讯地址，然后再实现本地 RPC 调用。

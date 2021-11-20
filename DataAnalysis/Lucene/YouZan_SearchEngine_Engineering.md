@@ -130,7 +130,7 @@ CREATE EXTERNAL TABLE search.goods_index (
 
 ​        ES一个问题是在高峰期时候极容易发生雪崩. ES有健全的线程池系统来保证并发与稳定性问题. 但是在流量突变的情况下(比如双十一秒杀)还是很容易发生瘫痪的现象, 主要的原因如下:
 
-1. ES几乎为每类操作配置一个线程池; 只能保证每个线程池的资源使用时合理的, 当2个以上的线程池竞争资源时容易造成资源响应不过来.
+1. ES几乎为每类操作配置一个线程池; 只能保证每个线程池的资源使用是合理的, 当2个以上的线程池竞争资源时容易造成资源响应不过来.
 2. ES没有考虑网络负载导致稳定的问题. 
 
 ​        在AS里我们实现了面向请求的全局队列来保证稳定性. 它主要做了3件事情.
@@ -151,7 +151,7 @@ CREATE EXTERNAL TABLE search.goods_index (
 
 ### 4.3 善用filtered query
 
-​        理解lucence filter工作原理对于写出高性能查询语句至关重要. 许多搜索性能优化都和filter的使用有关. filter使用bitsets进行布尔运算, quey使用倒排索引进行计算, 这是filter比query快的原因. bitsets的优势主要体现在:
+​        理解lucence filter工作原理对于写出高性能查询语句至关重要. 许多搜索性能优化都和filter的使用有关. filter使用bitsets进行布尔运算, query使用倒排索引进行计算, 这是filter比query快的原因. bitsets的优势主要体现在:
 
 1. bitsetcache在内存里面, 永不消失(除非被LRU).
 2. bitsets利用CPU原生支持的位运算操作, 比倒排索引快个数量级
