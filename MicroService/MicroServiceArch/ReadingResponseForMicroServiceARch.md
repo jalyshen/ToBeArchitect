@@ -36,7 +36,7 @@
 
 ![5](./images/ReadingResponseForMicroServiceARch/5.png)
 
-​        书里提供了两种思路：一种是按照业务/商业能力拆分，一种是按照DDD中的sub domain拆分。
+​        书里提供了两种思路：**一种是按照业务/商业能力拆分，一种是按照DDD中的sub domain拆分**。
 
 ​        例如，下面的业务：
 
@@ -64,7 +64,7 @@
 
 ![7](./images/ReadingResponseForMicroServiceARch/7.png)
 
-​        在拆分时，还应用SOLID中的SRP原则和另一个闭包原则 CCP（Common Closure Principle）来进行指导。
+​        在拆分时，**还应用SOLID中的SRP原则和另一个闭包原则 CCP（Common Closure Principle）来进行指导**。
 
 ​        在拆分后，也要注意微服务的拆分会额外带来的问题：
 
@@ -92,7 +92,7 @@
 
 ![10](./images/ReadingResponseForMicroServiceARch/10.png)
 
-​        PRC 进行服务集成的时候，更注意不要被某些不稳定的服务慢响应拖死，要注意设置超时，熔断。
+​        PRC 进行服务集成的时候，更注意不要被某些不稳定的服务慢响应拖死，要注意设置超时，熔断（fusing，[ˈfjuːzɪŋ]），降级（demotion）。
 
 ​        服务于服务之间要能找得到彼此，有两种方式，一种是基于服务注册中心的服务发现：
 
@@ -138,7 +138,7 @@
 * API故障了，怎么消息顺序乱了
 * ……
 
-​        这要求能有对上游的领域事件进行校验的系统，可以参考 Google的 schema validation 这个项目。
+​        这要求**能有对上游的领域事件进行校验的系统**，可以参考 Google的 schema validation 这个项目。
 
 ## 查询模式
 
