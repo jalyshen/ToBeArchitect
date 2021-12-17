@@ -160,49 +160,49 @@ Pod03: ip - 10.244.1.73
 
 ### 1.2.2 HeadLiness
 
-​       很多服务都需要支持定制化，如果将产品定位为服务，那么这个产品毋庸置疑是成功的。在某些场合中，开发人员不想要使用 service 提供的负载均衡功能，而是希望自己来控制负载均衡策略。针对这种情况，k8s 也是很好的支持了，引入了 ***HeadLiness Service***，这类 service 不会分配 ClusterIp，如果想要访问 service，只能通过 service 域名进行查询。
+很多服务都需要支持定制化，如果将产品定位为服务，那么这个产品毋庸置疑是成功的。在某些场合中，开发人员不想要使用 service 提供的负载均衡功能，而是希望自己来控制负载均衡策略。针对这种情况，k8s 也是很好的支持了，引入了 ***HeadLiness Service***，这类 service 不会分配 ClusterIp，如果想要访问 service，只能通过 service 域名进行查询。
 
-​        来看下 HeadLiness 的资源清单模版：
+来看下 HeadLiness 的资源清单模版：
 
 <img src="./images/Service_Ingress/20.jpg" alt="20" style="zoom:67%;" />
 
-​       唯一跟 ClusterIp 不同的便是 ***clusterIP: None*** 属性的变化。
+唯一跟 ClusterIp 不同的便是 ***clusterIP: None*** 属性的变化。
 
 ![21](./images/Service_Ingress/21.png)
 
-​       通过创建后可以发现，ClusterIP并为分配，继续查看 Service 的详情：
+通过创建后可以发现，ClusterIP并为分配，继续查看 Service 的详情：
 
 <img src="./images/Service_Ingress/22.jpg" alt="22" style="zoom:67%;" />
 
-​       通过详情发现，Endpoints已经生效了，然后任意进入到一个 Pod 中，查看域名解析的情况：
+通过详情发现，Endpoints已经生效了，然后任意进入到一个 Pod 中，查看域名解析的情况：
 
 ![23](./images/Service_Ingress/23.jpg)
 
-​       可以看到，域名解析也已经完成，默认域名为: ***service名称.命名空间.svc.cluster.local*** ：
+可以看到，域名解析也已经完成，默认域名为: ***service名称.命名空间.svc.cluster.local*** ：
 
 ![24](./images/Service_Ingress/24.png)
 
 ### 1.2.3 NodePort
 
-​       上面的两个 Service 类型，都是只能在集群的内部才能访问，但是部署服务（应用）肯定是想让用户通过集群，让外部可以使用的。这个时候，就需要用到创建的Service类型：**NodePort** servcie
+上面的两个 Service 类型，都是只能在集群的内部才能访问，但是部署服务（应用）肯定是想让用户通过集群，让外部可以使用的。这个时候，就需要用到创建的Service类型：**NodePort** servcie
 
-​       这种类型的 servcie 的**工作原理**也不难，其实**就是将 service 的端口映射到 Node 的一个端口上**，然后通过 ***NodeIP + NodePort*** 进行访问。
+这种类型的 servcie 的**工作原理**也不难，其实**就是将 service 的端口映射到 Node 的一个端口上**，然后通过 ***NodeIP + NodePort*** 进行访问。
 
 <img src="./images/Service_Ingress/25.jpg" alt="25" style="zoom:67%;" />
 
-​       看了原理图，瞬间的明白了。那么看看如何通过资源清单来创建：
+看了原理图，瞬间的明白了。那么看看如何通过资源清单来创建：
 
 <img src="./images/Service_Ingress/26.jpg" alt="26" style="zoom:67%;" />
 
-​       然后访问：
+然后访问：
 
 ![27](./images/Service_Ingress/27.png)
 
-​       可以看出，通过两种方式都可以访问的，也可以在浏览器中访问了。
+可以看出，通过两种方式都可以访问的，也可以在浏览器中访问了。
 
 ### 1.2.4 LoadBalancer
 
-​       LoadBalancer 听名字就知道跟负载均衡有关。这个类型与 NodePort 很相似，目的都是向外暴露一个端口，主要的区别在于 **LoadBalancer** 会在集群的外部再做一个负载均衡器，而这个设备是需要外部环境支持的，外部环境发送到这个设备的请求，会被设备负载之后转发到集群中：
+LoadBalancer 听名字就知道跟负载均衡有关。这个类型与 NodePort 很相似，目的都是向外暴露一个端口，主要的区别在于 **LoadBalancer** 会在集群的**外部**再做一个负载均衡器，而这个设备是需要外部环境支持的，外部环境发送到这个设备的请求，会被设备负载之后转发到集群中：
 
 <img src="./images/Service_Ingress/28.png" alt="28" style="zoom:80%;" />
 
@@ -210,7 +210,7 @@ Pod03: ip - 10.244.1.73
 
 ### 1.2.5 ExternalName
 
-​       **ExternalName** 类型的 service 是用于引入集群外部的服务，它通过 externalname 属性指定外部一个服务的地址，然后在集群内部访问此 service 就可以访问到外部服务了。
+**ExternalName** 类型的 service 是用于引入集群外部的服务，它通过 externalname 属性指定外部一个服务的地址，然后在集群内部访问此 service 就可以访问到外部服务了。
 
 <img src="./images/Service_Ingress/29.jpg" alt="29" style="zoom:67%;" />
 
@@ -218,7 +218,7 @@ Pod03: ip - 10.244.1.73
 
 <img src="./images/Service_Ingress/30.jpg" alt="30" style="zoom:67%;" />
 
-​       创建后可以查看域名解析，发现已经能够成功解析：
+创建后可以查看域名解析，发现已经能够成功解析：
 
 ```shell
 dig @10.96.0.10 svc-externalname.cbuc-test.svc.cluster.local
@@ -232,16 +232,16 @@ dig @10.96.0.10 svc-externalname.cbuc-test.svc.cluster.local
 
 ### 2.1 工作模式
 
-​        上面介绍了 Service 几种类型的用法，已经了解了，如果想让外部用户访问到 Pod 中的服务，有两种类型的 Service 是支持的，分别是 NodePort 和 LoadBalancer。但是认真分析一下，不难发现，这两种 Service 有这些缺点：
+上面介绍了 Service 几种类型的用法，已经了解了，如果想让外部用户访问到 Pod 中的服务，有两种类型的 Service 是支持的，分别是 NodePort 和 LoadBalancer。但是认真分析一下，不难发现，这两种 Service 有这些缺点：
 
 * **NodePort**：会占用集群机器的很多端口，当集群服务变多的时候，这个缺点就越发明显了
 * **LoadBalancer**：每个 Service 都需要一个 LB，比较麻烦，且浪费资源，并且需要 K8s 之外的负载均衡设备支持
 
-​        这些缺点，K8s 团队早发现了，于是推出了 **Ingress** 。Ingress 仅需要一个 NodePort 或者 LB 就可以满足暴露多个 Service 的需求：
+这些缺点，K8s 团队早发现了，于是推出了 **Ingress** 。Ingress 仅需要一个 NodePort 或者 LB 就可以满足暴露多个 Service 的需求：
 
 ![32](./images/Service_Ingress/32.png)
 
-​        实际上，Ingress 就相当于一个 7 层的负载均衡器，是 K8s 对反向代理的一个抽象，它的工作原理类似于 Nginx，可以理解成在 Ingress 里建立诸多的隐射规则，然后 **Ingress Controller** 通过监听这些配置规则转化成 Nginx 的反向代理配置，然后对外提供该服务。这边涉及到了两个重要概念：
+​        实际上，**Ingress 就相当于一个<font color='red'>七层</font> 的负载均衡器**，是 K8s 对反向代理的一个抽象，它的工作原理类似于 Nginx，可以理解成在 Ingress 里建立诸多的隐射规则，然后 **Ingress Controller** 通过监听这些配置规则转化成 Nginx 的反向代理配置，然后对外提供该服务。这边涉及到了两个重要概念：
 
 *  **Ingress**：K8s 中的一个资源对象，作用是定义请求如何转发到 service 的规则
 * **Ingress Controller**：具体实现反向代理及负载均衡的程序，对 Ingress 定义的规则进行解析，根据配置的规则来实现请求转发，有很多实现方式，如 Nginx、Contor、HAproxy 等
@@ -263,7 +263,7 @@ dig @10.96.0.10 svc-externalname.cbuc-test.svc.cluster.local
 
 ##### 步骤一
 
-​       拉取需要的资源清单：
+拉取需要的资源清单：
 
 ```shell
 wget https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/mandatory.yaml
@@ -273,7 +273,7 @@ wget https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/dep
 
 ##### 步骤二
 
-​        创建资源：
+创建资源：
 
 ```shell
 kubectl apply -f ./
@@ -281,21 +281,21 @@ kubectl apply -f ./
 
 ##### 步骤三
 
-​        查看资源是否创建成功
+查看资源是否创建成功
 
-​        到这里，就已经准备好了 Ingress 环境，接下来是测试环节。准备两个 Service，两个 Deployment， 和创建 6 个副本的 Pod：
+到这里，就已经准备好了 Ingress 环境，接下来是测试环节。准备两个 Service，两个 Deployment， 和创建 6 个副本的 Pod：
 
 ![34](./images/Service_Ingress/34.png)
 
-​        完成后，大致的结构如下：
+完成后，大致的结构如下：
 
 ![35](./images/Service_Ingress/35.png)
 
-​        现在，需要添加一个 **Ingress** 来达到下图的目标结果：
+现在，需要添加一个 **Ingress** 来达到下图的目标结果：
 
 ![36](./images/Service_Ingress/36.png)
 
-​        准备 Ingress 的资源清单：
+准备 Ingress 的资源清单：
 
 ```yaml
 apiVersion: extensions/v1beta1
@@ -321,12 +321,12 @@ spec:
           servicePort: 80
 ```
 
-​        通过创建后，还需要在电脑的本地 **hosts** 添加域名映射：
+通过创建后，还需要在电脑的本地 **hosts** 添加域名映射：
 
 ![37](./images/Service_Ingress/37.jpg)
 
-​        然后在网页上通过 ***域名+nodePort*** 的方式就可以访问到了：
+然后在网页上通过 ***域名+nodePort*** 的方式就可以访问到了：
 
 ![38](./images/Service_Ingress/38.png)
 
-​       这就实现了 Ingress 的访问方式了。
+这就实现了 Ingress 的访问方式了。
