@@ -4,9 +4,9 @@
 
 
 
-​        本文总结了在多处理器(MPs)中常用的的处理器列表，处理器相关的信息都可以从链接指向的文档中得到（一些网站需要通过注册才能得到相应的手册）。当然，这不是一个完全详细的列表，但已经包括了我所知道的在当前或者将来Java实现中所使用的多核处理器。下面所述的关于处理器的列表和内容也不一定权威。我只是总结一下我所阅读过的文档，但是这些文档也有可能是被我误解了，一些参考手册也没有把Java内存模型(JMM)相关的内容阐述清楚，所以请协助我把本文变得更准确。
+本文总结了在多处理器(MPs)中常用的的处理器列表，处理器相关的信息都可以从链接指向的文档中得到（一些网站需要通过注册才能得到相应的手册）。当然，这不是一个完全详细的列表，但已经包括了我所知道的在当前或者将来Java实现中所使用的多核处理器。下面所述的关于处理器的列表和内容也不一定权威。我只是总结一下我所阅读过的文档，但是这些文档也有可能是被我误解了，一些参考手册也没有把Java内存模型(JMM)相关的内容阐述清楚，所以请协助我把本文变得更准确。
 
-​        一些很好地讲述了跟内存屏障(barriers)相关的硬件信息和机器(machines)相关的特性的资料并没有在本文中列出来，如《Hans Boehm的原子操作库([Hans Boehm’s atomic_ops library](http://www.hpl.hp.com/research/linux/atomic_ops/))》,  《Linux内核源码([Linux Kernel Source](http://kernel.org/))》, 和 《Linux可扩展性研究计划([Linux Scalability Effort](http://lse.sourceforge.net/))》。Linux内核中所需的内存屏障与这里讨论的是非常一致的，它已被移植到大多数处理器中。不同处理器所支持的潜在内存模型的相关描述，可以查阅[Sarita Adve et al, Recent Advances in Memory Consistency Models for Hardware Shared-Memory Systems](http://rsim.cs.uiuc.edu/~sadve/)和 [Sarita Adve and Kourosh Gharachorloo, Shared Memory Consistency Models: A Tutorial](http://rsim.cs.uiuc.edu/~sadve/).
+一些很好地讲述了跟内存屏障(barriers)相关的硬件信息和机器(machines)相关的特性的资料并没有在本文中列出来，如《Hans Boehm的原子操作库([Hans Boehm’s atomic_ops library](http://www.hpl.hp.com/research/linux/atomic_ops/))》,  《Linux内核源码([Linux Kernel Source](http://kernel.org/))》, 和 《Linux可扩展性研究计划([Linux Scalability Effort](http://lse.sourceforge.net/))》。Linux内核中所需的内存屏障与这里讨论的是非常一致的，它已被移植到大多数处理器中。不同处理器所支持的潜在内存模型的相关描述，可以查阅[Sarita Adve et al, Recent Advances in Memory Consistency Models for Hardware Shared-Memory Systems](http://rsim.cs.uiuc.edu/~sadve/)和 [Sarita Adve and Kourosh Gharachorloo, Shared Memory Consistency Models: A Tutorial](http://rsim.cs.uiuc.edu/~sadve/).
 
 
 

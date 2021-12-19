@@ -10,9 +10,9 @@ Object proxy = Proxy.newProxyInstance(ClassLoader loader,
                                       InvocationHandler h)
 ```
 
-​        上面代码会生成一个代理类对象 proxy，通过代理类就可以访问到 realSubject 的行为（method），具体怎么访问，下面继续说明。
+上面代码会生成一个代理类对象 proxy，通过代理类就可以访问到 realSubject 的行为（method），具体怎么访问，下面继续说明。
 
-​        **Proxy.class**
+**Proxy.class**
 
 ```java
 // InvocationiHandler 是 Proxy 类的属性
@@ -59,12 +59,12 @@ private static final class ProxyClassFactory
 }
 ```
 
-​        通过上面的源码，可以看到：
+通过上面的源码，可以看到：
 
 1. InvocationHandler 是 Proxy 的属性
 2. 使用 ProxyGenerator.generateProxyClass 可以生成代理类对象
 
-​        接下来通过实例来说明原理：
+接下来通过实例来说明原理：
 
 ```java
 // 定义一个接口
@@ -112,7 +112,7 @@ public class JdkProxy {
 }
 ```
 
-​        上面代码的执行结果：
+上面代码的执行结果：
 
 ```shell
 before method invoke ...
@@ -120,7 +120,7 @@ Query user ...
 after method invoke ...
 ```
 
-​        还有一个问题，就是上面的 Proxy 怎么可以直接转化为 UserService？上面也说过使用 ProxyGenerator.generateProxyClass 可以生成代理类对象，那么不妨看看生成代理类的源码：
+还有一个问题，就是上面的 Proxy 怎么可以直接转化为 UserService？上面也说过使用 ProxyGenerator.generateProxyClass 可以生成代理类对象，那么不妨看看生成代理类的源码：
 
 ```java
 byte[] proxyClassFile = ProxyGenerator

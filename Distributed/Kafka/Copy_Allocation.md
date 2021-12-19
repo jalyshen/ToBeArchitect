@@ -6,9 +6,9 @@
 
 ## 一、源码分析
 
-​        创建 Topic 的源码入口是  <font color='red'> ***AdminManager.createTopics()*** </font>
+创建 Topic 的源码入口是  <font color='red'> ***AdminManager.createTopics()*** </font>
 
-​        以下只列出了分区分配相关代码，其他的省略：
+以下只列出了分区分配相关代码，其他的省略：
 
 ```scala
 def createTopics(timeout: Int,
@@ -40,15 +40,15 @@ def createTopics(timeout: Int,
   }
 ```
 
-​        以上有两种方式，一种是没有指定分区分配的情况也就是没有使用参数 <font color='red'> *--replica-assignment* </font>; 另一种是自己指定分区分配。
+以上有两种方式，一种是没有指定分区分配的情况也就是没有使用参数 <font color='red'> *--replica-assignment* </font>; 另一种是自己指定分区分配。
 
 ### 1.1 自定义指定分区分配规则
 
-​        从源码中得知，会把指定的规则进行了包装，注意它并没有去检查指定的Broker是否存在。
+从源码中得知，会把指定的规则进行了包装，注意它并没有去检查指定的Broker是否存在。
 
 ### 1.2 自动分配
 
-​        使用 ***AdminUtils.assignReplicasToBrokers***
+使用 ***AdminUtils.assignReplicasToBrokers***
 
 ![1](./images/Copy_Allocation/1.png)
 
@@ -114,7 +114,7 @@ private def assignReplicasToBrokersRackUnaware(nPartitions: Int,
 2. 对于这个 partition 的其他副本，逐渐增加 Broker.id 来选择 replica 的分配
 3. 对于副本分配来说，每经历一次 Broke 的遍历，则第一个副本跟后面的副本直接的间隔 +1
 
-​        从代码和描述来看，不太好理解。通过下图可能更容易理解。在代码中增加一些日志：
+从代码和描述来看，不太好理解。通过下图可能更容易理解。在代码中增加一些日志：
 
 ![2](./images/Copy_Allocation/2.png)
 
@@ -122,7 +122,7 @@ private def assignReplicasToBrokersRackUnaware(nPartitions: Int,
 
 ##### 情形一
 
-​        Broker 列表 {0,1,2,3,4} 分区数 10，副本数 3，起始随机 BrokerId = 0，起始随机 nextReplicaShift = 0
+Broker 列表 {0,1,2,3,4} 分区数 10，副本数 3，起始随机 BrokerId = 0，起始随机 nextReplicaShift = 0
 
 ```scala
 @Test
@@ -162,7 +162,7 @@ def testReplicaAssignment2(): Unit = {
 5. p5 - 1 在 broker-0 上，然后 p5 - 2 间隔 nextReplicaShit = 1 个位置，所以 p5 - 2 这个时候在 broker-2 上，p5 - 3 则在 p5 - 2 基础上顺推一位就行了。如果顺推的位置上已经有了副本，则继续顺推到没有当前分区副本的 Broker
 6. 如果分区过多，有可能 nextReplicaShift 就变的挺大，在算第一个跟第二个副本的间隔的时候，不用把第一个副本算进去
 
-​        假如下面开始是 5，其中经历过的间隔就是 （1 -> 2 -> 3 -> 4 -> 1），所以 pn - 2 就落在了 BrokerList[ 2 ] 上了。如图：
+假如下面开始是 5，其中经历过的间隔就是 （1 -> 2 -> 3 -> 4 -> 1），所以 pn - 2 就落在了 BrokerList[ 2 ] 上了。如图：
 
 ![4](./images/Copy_Allocation/4.png)
 
@@ -170,9 +170,9 @@ def testReplicaAssignment2(): Unit = {
 
 ##### 情形二
 
-​        Broker 列表 {0, 1, 2, 3, 4} 分区数 11， 副本数 3， 起始随机 BrokerId = 0，起始随机 nextReplicaShift = 0
+Broker 列表 {0, 1, 2, 3, 4} 分区数 11， 副本数 3， 起始随机 BrokerId = 0，起始随机 nextReplicaShift = 0
 
-​        在上面基础上，在增加一个分区，会如何分配呢？结果如下：
+在上面基础上，在增加一个分区，会如何分配呢？结果如下：
 
 ```shell
 起始随机startIndex:0;起始随机nextReplicaShift：0
@@ -196,9 +196,9 @@ def testReplicaAssignment2(): Unit = {
 
 ##### 情形三
 
-​        Broker列表{0,1,2,3,4} 分区数 10 副本数4 起始随机BrokerId=0; 起始随机nextReplicaShift=0
+Broker列表{0,1,2,3,4} 分区数 10 副本数4 起始随机BrokerId=0; 起始随机nextReplicaShift=0
 
-​        结果如下：
+结果如下：
 
 ```shell
 起始随机startIndex:0;起始随机nextReplicaShift：0
@@ -217,13 +217,13 @@ def testReplicaAssignment2(): Unit = {
 
 ![6](./images/Copy_Allocation/6.png)
 
-​        看到这里，在上面的副本=3的基础上，新增了一个副本=4，原有的分配都基本没有变化，只是在之前的分配基础上，按照顺序再新增一个副本，见上图**浅黄色区域**，如果想缩小副本数量也是同样的道理。
+看到这里，在上面的副本=3的基础上，新增了一个副本=4，原有的分配都基本没有变化，只是在之前的分配基础上，按照顺序再新增一个副本，见上图**浅黄色区域**，如果想缩小副本数量也是同样的道理。
 
-​        上面预设的 *nextReplicaShift = 0* ，并且 BrokerList 顺序也是 {0, 1, 2, 3, 4}，这样的情况理解起来稍微容易点儿，但是在实际的分配过程中，这个 BrokerList 并不是总是按照顺序来的，很多情况下都是乱序的，所以<font color='red'>**排列的位置是按照 BrokerList 的下标**</font>来进行的。
+上面预设的 *nextReplicaShift = 0* ，并且 BrokerList 顺序也是 {0, 1, 2, 3, 4}，这样的情况理解起来稍微容易点儿，但是在实际的分配过程中，这个 BrokerList 并不是总是按照顺序来的，很多情况下都是乱序的，所以<font color='red'>**排列的位置是按照 BrokerList 的下标**</font>来进行的。
 
 ##### 情形四
 
-​        Broker列表{0,1,2,3,4} 分区数 10 副本数3 起始随机BrokerId=0; 起始随机nextReplicaShift=3
+Broker列表{0,1,2,3,4} 分区数 10 副本数3 起始随机BrokerId=0; 起始随机nextReplicaShift=3
 
 ![7](./images/Copy_Allocation/7.png)
 
@@ -287,9 +287,9 @@ private def assignReplicaToBrokersRackAware(nPartitions: Int,
 
 ### 1.3 分区扩容分配
 
-​        扩容的过程是不会对之前的分区副本有所改动的,但是你新增的分区并不是会按照之前的策略再进行分配
+扩容的过程是不会对之前的分区副本有所改动的,但是你新增的分区并不是会按照之前的策略再进行分配
 
-​       ***AdminZKClient.addPartitions***
+***AdminZKClient.addPartitions***
 
 ```Scala
 val proposedAssignmentForNewPartitions = replicaAssignment.getOrElse {
@@ -300,7 +300,7 @@ val proposedAssignmentForNewPartitions = replicaAssignment.getOrElse {
 
 看代码，startIndex 获取的是 *partition-0*  的第一个副本，allBrokers 也是按照顺序排序好的 {0, 1, 2, 3, ...}， startPartition=当前分区数
 
-​        例如，有个 topic， 2 分区，3副本，分配情况：
+例如，有个 topic， 2 分区，3副本，分配情况：
 
 ```shell
 起始随机startIndex:0currentPartitionId:0;起始随机nextReplicaShift：2;brokerArray:ArrayBuffer(0, 1, 4, 2, 3)
@@ -308,17 +308,17 @@ val proposedAssignmentForNewPartitions = replicaAssignment.getOrElse {
 (p-1,ArrayBuffer(1, 3, 0))
 ```
 
-​        先来计算一下，第 3 个分区如果同样条件的话，应该分配到哪里。
+先来计算一下，第 3 个分区如果同样条件的话，应该分配到哪里。
 
-​        先确定一下分配当时的 BrokerList ，按照顺序的关系 0 -> 2 -> 3, 1 -> 3 -> 0 ，至少可以画出下面的图：
+先确定一下分配当时的 BrokerList ，按照顺序的关系 0 -> 2 -> 3, 1 -> 3 -> 0 ，至少可以画出下面的图：
 
 ![8](./images/Copy_Allocation/8.png)
 
-​        又根据 2 -> 3 (2 的下一个是3)，3 -> 0（ 3 的下一个是 0）这样的关系可知：
+又根据 2 -> 3 (2 的下一个是3)，3 -> 0（ 3 的下一个是 0）这样的关系可知：
 
 ![9](./images/Copy_Allocation/9.png)
 
-> ​        又要满足 0 -> 2 和 1 -> 3 的跨度要满足一致（当然，说的是同一个遍历范围内 currentPartitionId / brokerArray.length 相等），又要满足 0 -> 1 是连续的，那么 Broker 4 只能放在 1-2 之间了（正常分配的时候，每个分区的第一个副本都是按照 brokerList 顺序下去的，比如 P1(0,2,3)， P2(1,3,0)，那么 0 -> 1 之间肯定是连续的）。
+> 又要满足 0 -> 2 和 1 -> 3 的跨度要满足一致（当然，说的是同一个遍历范围内 currentPartitionId / brokerArray.length 相等），又要满足 0 -> 1 是连续的，那么 Broker 4 只能放在 1-2 之间了（正常分配的时候，每个分区的第一个副本都是按照 brokerList 顺序下去的，比如 P1(0,2,3)， P2(1,3,0)，那么 0 -> 1 之间肯定是连续的）。
 
 
 
@@ -348,5 +348,5 @@ P3（4,0,1）
 
 ### 3.2 startIndex和nextReplicaShi为啥要用随机值
 
-​        之所以 **startIndex** 选择随机产生，是因为这样可以在多个主题的情况下尽可能地均匀分布分区副本。如果这里固定为一个特定值，那么每次的第一个副本都是在这个 broker 上，进而导致少数几个 broker 所分配到的分区副本过多而其余 broker 分配到的分区副本过少，最终导致负载不均衡。尤其是某些主题的副本数和分区数都比较少，甚至都为 1 的情况下，所有的副本都落到了那个指定 broker 上。与此同时，在分配时位移量 nextReplicaShit 也可以更好地使分区副本分配得更加均匀。
+之所以 **startIndex** 选择随机产生，是因为这样可以在多个主题的情况下尽可能地均匀分布分区副本。如果这里固定为一个特定值，那么每次的第一个副本都是在这个 broker 上，进而导致少数几个 broker 所分配到的分区副本过多而其余 broker 分配到的分区副本过少，最终导致负载不均衡。尤其是某些主题的副本数和分区数都比较少，甚至都为 1 的情况下，所有的副本都落到了那个指定 broker 上。与此同时，在分配时位移量 nextReplicaShit 也可以更好地使分区副本分配得更加均匀。
 
