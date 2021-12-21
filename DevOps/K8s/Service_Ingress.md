@@ -4,15 +4,15 @@
 
 
 
-​        K8s中的Service和Ingress，就是介绍搭建完成K8s后，如何进行访问。
+K8s中的Service和Ingress，就是介绍搭建完成K8s后，如何进行访问。
 
-​        首先，需要搞清楚什么是 **Service** 和 **Ingress**。简单而言，这两个组件都是用来做流量负载的。什么是“流量负载”呢？当在集群内部已经通过 pod 部署了应用服务，下一步干啥呢？就是让用户访问到这些应用服务。
+首先，需要搞清楚什么是 **Service** 和 **Ingress**。简单而言，这两个组件都是用来做流量负载的。什么是“流量负载”呢？当在集群内部已经通过 pod 部署了应用服务，下一步干啥呢？就是让用户访问到这些应用服务。
 
 
 
 ## 1. Service
 
-​        在 K8s中，pod 是应用程序的载体，可以通过 pod 的 IP 来访问应用程序，但是 pod 是有生命周期的，一旦 pod 出现问题，pod 控制器就会将 pod 销毁并进行重新创建。那么这个时候， pod 的 IP 就会发生变化，因此利用 pod IP 访问应用程序的方式是行不通的。要解决这个问题，K8s 引入了 service 的资源概念，通过这个资源，可以整合多个 pod，提供一个统一的入口地址，通过访问 servie 的入口地址就能访问到后面 pod 的服务。
+在 K8s中，pod 是应用程序的载体，可以通过 pod 的 IP 来访问应用程序，但是 pod 是有生命周期的，一旦 pod 出现问题，pod 控制器就会将 pod 销毁并进行重新创建。那么这个时候， pod 的 IP 就会发生变化，因此利用 pod IP 访问应用程序的方式是行不通的。要解决这个问题，K8s 引入了 service 的资源概念，通过这个资源，可以整合多个 pod，提供一个统一的入口地址，通过访问 servie 的入口地址就能访问到后面 pod 的服务。
 
 ![1](./images/Service_Ingress/1.png)
 
@@ -24,45 +24,45 @@
 
 ![3](./images/Service_Ingress/3.jpg)
 
-​        到这里，应该对 Servcie 有了大概的了解，至少知道它是干啥的了。接下来再深入了解一下。
+到这里，应该对 Servcie 有了大概的了解，至少知道它是干啥的了。接下来再深入了解一下。
 
 ### 1.1 工作模式
 
-​        **Kube-proxy** 支持3种工作模式，如下：
+**Kube-proxy** 支持3种工作模式，如下：
 
 #### 1.1.1 userSpace
 
-​        这个模式**比较稳定，但是效率比较低**。在 userSpace 模式下，kube-proxy 会为每一个 Service 创建一个监听端口，当有请求发往 cluster IP 的时候，会被 IPtables 规划重定向到 kube-proxy 监听的端口上，kube-proxy 会根据 **LB 算法** 选择一个 pod 提供服务并建立连接。
+这个模式**比较稳定，但是效率比较低**。在 userSpace 模式下，kube-proxy 会为每一个 Service 创建一个监听端口，当有请求发往 cluster IP 的时候，会被 IPtables 规划重定向到 kube-proxy 监听的端口上，kube-proxy 会根据 **LB 算法** 选择一个 pod 提供服务并建立连接。
 
-​        这个模式下，kube-proxy 充当的角色是一个“**四层负载均衡器**”，由于 kube-proxy 运行在 userSpace 模式下，在进行转发处理的时候，会增加内核和用户空间之间的数据拷贝，因此效率比较低。
+这个模式下，kube-proxy 充当的角色是一个“**四层负载均衡器**”，由于 kube-proxy 运行在 userSpace 模式下，在进行转发处理的时候，会增加内核和用户空间之间的数据拷贝，因此效率比较低。
 
 ![4](./images/Service_Ingress/4.jpg)
 
 #### 1.1.2 iptables
 
-​        在这种模式下，kube-proxy 会为 Service 后端的每个 pod 都创建对应的 iptable 规则，直接将发往 Cluster IP 的请求重定向到一个 pod IP 上。该模式下 Kube-proxy **不承担**“四层负载均衡器”的角色，只负责创建 iptables 的规则。该模式的优点，就是相较于 userSpace 模式效率更高，但是**不能提供**灵活的 LB 策略。当后端 Pod 不可用的时候无法进行重试。
+在这种模式下，kube-proxy 会为 Service 后端的每个 pod 都创建对应的 iptable 规则，直接将发往 Cluster IP 的请求重定向到一个 pod IP 上。该模式下 Kube-proxy **不承担**“四层负载均衡器”的角色，只负责创建 iptables 的规则。该模式的优点，就是相较于 userSpace 模式效率更高，但是**不能提供**灵活的 LB 策略。当后端 Pod 不可用的时候无法进行重试。
 
 ![5](./images/Service_Ingress/5.jpg)
 
 #### 1.1.3 ipvs
 
-​        这种模式与 iptables 模式相似，kube-proxy 会监控 pod 的变化并创建相应的 ipvs 规则。但是 ipvs 规则相对于 iptables 来说转发效率更高，而且**支持更多的 LB算法**。
+这种模式与 iptables 模式相似，kube-proxy 会监控 pod 的变化并创建相应的 ipvs 规则。但是 ipvs 规则相对于 iptables 来说转发效率更高，而且**支持更多的 LB算法**。
 
 ![6](./images/Service_Ingress/6.jpg)
 
 ### 1.2 实践
 
-​        了解了3种模式后，现在简单试一下 ipvs 模式。首先准备一份资源清单：
+了解了3种模式后，现在简单试一下 ipvs 模式。首先准备一份资源清单：
 
 ![7](./images/Service_Ingress/7.png)
 
 这份清单上半部分是创建一个 pod 控制器，下半部分是创建一个 service。
 
-​        然后输入 ipvsadm -Ln 命令，即可以看到 ipvs 的规则策略：
+然后输入 ipvsadm -Ln 命令，即可以看到 ipvs 的规则策略：
 
 ![8](./images/Service_Ingress/8.png)
 
-​        其中，**10.108.230.12**，是 service 提供的访问入口，当访问这个入口时，可以发现后面三个 pod 的服务在等待调用， kube-proxy 会基于 rr （轮询）的策略，将请求分发到其中一个 pod 上去，这个规则会同时在集群的所有节点上都生成，所以在任何一个节点上访问都可以。
+其中，**10.108.230.12**，是 service 提供的访问入口，当访问这个入口时，可以发现后面三个 pod 的服务在等待调用， kube-proxy 会基于 rr （轮询）的策略，将请求分发到其中一个 pod 上去，这个规则会同时在集群的所有节点上都生成，所以在任何一个节点上访问都可以。
 
 > 此模式必须安装 ipvs 内核模块，否则会降低为 iptables。
 >
@@ -78,7 +78,7 @@
 
 ### 1.2 Service 使用
 
-​        上面介绍完 Service 的几种工作模式，下面进入 Service 的使用阶段。上面也做了简单的实践，创建了一个 **Deploy**，一个 **Service**，然后可以通过 ***serviceIp + targetPort*** 或者 ***nodeIp + nodePort*** 访问资源。
+上面介绍完 Service 的几种工作模式，下面进入 Service 的使用阶段。上面也做了简单的实践，创建了一个 **Deploy**，一个 **Service**，然后可以通过 ***serviceIp + targetPort*** 或者 ***nodeIp + nodePort*** 访问资源。
 
 ![9](./images/Service_Ingress/9.png)
 
@@ -86,35 +86,35 @@ Service又分为 5 种类型。下面分别介绍。
 
 #### 1.2.1 ClusterIP
 
-​        先看下 **ClusterIP** 类型的 Service 的资源清单：
+先看下 **ClusterIP** 类型的 Service 的资源清单：
 
 <img src="./images/Service_Ingress/10.jpg" alt="10" style="zoom:80%;" />
 
-​        通过创建后测试访问 **clusterIP + port**：
+通过创建后测试访问 **clusterIP + port**：
 
 ![11](./images/Service_Ingress/11.jpg)
 
-​        再查看下 ipvs 规则，可以看到该 Service 已经可以转发到对应的 3 个 pod 上：
+再查看下 ipvs 规则，可以看到该 Service 已经可以转发到对应的 3 个 pod 上：
 
 ![12](./images/Service_Ingress/12.jpg)
 
-​        接下来可以通过 describe 指令查看该 service 有哪些信息：
+接下来可以通过 describe 指令查看该 service 有哪些信息：
 
 ![13](./images/Service_Ingress/13.jpg)
 
-​        扫了一遍发现， Endpoints 和 Session Affinity 都是之前没有见过的，这两个又是什么呢？
+扫了一遍发现， Endpoints 和 Session Affinity 都是之前没有见过的，这两个又是什么呢？
 
 ##### Endpoint
 
-​        Endpoint 是 k8s 中的一个资源对象，存储在 eted 中，用来记录一个 service 对应的所有 Pod 的访问地址，它是根据 Service 配置文件中 selector 描述产生的。一个 service 由一组 Pod 组成，这些 Pod 通过 Endpoint 暴露出来，可以说，**Endport** 是实际实现服务的端口的集合。通俗来说，Endpoint 是 service 和 pod 之间的桥梁：
+Endpoint 是 k8s 中的一个资源对象，存储在 eted 中，用来记录一个 service 对应的所有 Pod 的访问地址，它是根据 Service 配置文件中 selector 描述产生的。一个 service 由一组 Pod 组成，这些 Pod 通过 Endpoint 暴露出来，可以说，**Endport** 是实际实现服务的端口的集合。通俗来说，Endpoint 是 service 和 pod 之间的桥梁：
 
 ![14](./images/Service_Ingress/14.jpg)
 
-​        既然是一个资源，就可以获取到。
+既然是一个资源，就可以获取到。
 
 ##### 负载分发
 
-​        上面已经成功的实现了通过 service 访问到 pod 资源，那么再做一些修改，分别进入3个pod，编辑文件 /usr/share/nginx/index.html：
+上面已经成功的实现了通过 service 访问到 pod 资源，那么再做一些修改，分别进入3个pod，编辑文件 /usr/share/nginx/index.html：
 
 ```shell
 #pod01
@@ -134,7 +134,7 @@ Pod03: ip - 10.244.1.73
 * 如果未定义分发策略，默认使用 kube-proxy 的策略，比如随机、轮询
 * 基于客户端地址的会话保持模式，即来自同一个客户端发起的所有请求都会转发到固定的一个pod上。这里就需要用到上面提到的 sessionAffinity
 
-​        之前用 ***ipvsadm -Ln*** 命令查看分发策略的时候，里面有个 **rr** 字段，这个 **rr** 就是轮询：
+之前用 ***ipvsadm -Ln*** 命令查看分发策略的时候，里面有个 **rr** 字段，这个 **rr** 就是轮询：
 
 <img src="./images/Service_Ingress/16.jpg" alt="16" style="zoom:67%;" />
 
@@ -142,15 +142,15 @@ Pod03: ip - 10.244.1.73
 
 ##### Sesson Affinity
 
-​        如果想开启会话保持的分发策略，那么只需要在 **spec** 中添加 **sessionAffinify:ClientIP**：
+如果想开启会话保持的分发策略，那么只需要在 **spec** 中添加 **sessionAffinify:ClientIP**：
 
 <img src="./images/Service_Ingress/17.jpg" alt="17" style="zoom:67%;" />
 
-​       再次通过 ipvsadm -Ln 查看分发策略，就会发现已经变化了：
+再次通过 ipvsadm -Ln 查看分发策略，就会发现已经变化了：
 
 <img src="./images/Service_Ingress/18.jpg" alt="18" style="zoom:67%;" />
 
-​       再简单测试一下：
+再简单测试一下：
 
 <img src="./images/Service_Ingress/19.jpg" alt="19" style="zoom:67%;" />
 
@@ -241,12 +241,12 @@ dig @10.96.0.10 svc-externalname.cbuc-test.svc.cluster.local
 
 ![32](./images/Service_Ingress/32.png)
 
-​        实际上，**Ingress 就相当于一个<font color='red'>七层</font> 的负载均衡器**，是 K8s 对反向代理的一个抽象，它的工作原理类似于 Nginx，可以理解成在 Ingress 里建立诸多的隐射规则，然后 **Ingress Controller** 通过监听这些配置规则转化成 Nginx 的反向代理配置，然后对外提供该服务。这边涉及到了两个重要概念：
+实际上，**Ingress 就相当于一个<font color='red'>七层</font> 的负载均衡器**，是 K8s 对反向代理的一个抽象，它的工作原理类似于 Nginx，可以理解成在 Ingress 里建立诸多的隐射规则，然后 **Ingress Controller** 通过监听这些配置规则转化成 Nginx 的反向代理配置，然后对外提供该服务。这边涉及到了两个重要概念：
 
 *  **Ingress**：K8s 中的一个资源对象，作用是定义请求如何转发到 service 的规则
 * **Ingress Controller**：具体实现反向代理及负载均衡的程序，对 Ingress 定义的规则进行解析，根据配置的规则来实现请求转发，有很多实现方式，如 Nginx、Contor、HAproxy 等
 
-​        Ingress Controller，有很多可以实现请求转发的方式，通常会选择自己比较熟悉的Nginx作为负载。下面就以 Nginx 为例，了解一下其工作原理：
+Ingress Controller，有很多可以实现请求转发的方式，通常会选择自己比较熟悉的Nginx作为负载。下面就以 Nginx 为例，了解一下其工作原理：
 
 ![33](./images/Service_Ingress/33.jpg)
 
