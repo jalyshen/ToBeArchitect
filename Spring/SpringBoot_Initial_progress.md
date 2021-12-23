@@ -6,21 +6,21 @@
 
 ## 一. SpringBoot 与 Spring、Spring MVC的不同
 
-​        **Spring** 框架就像是一个家族，有众多的衍生产品，如 SpringBoot、SpringJPA、Spring Security 等等。但是，它们的基础都是 Spring 的 IoC 和 AOP。IoC 提供了依赖注入的容器，AOP 解决了面向切面编程，然后在此两者的基础上实现了其他衍生产品的高级功能。
+**Spring** 框架就像是一个家族，有众多的衍生产品，如 SpringBoot、SpringJPA、Spring Security 等等。但是，它们的基础都是 Spring 的 IoC 和 AOP。IoC 提供了依赖注入的容器，AOP 解决了面向切面编程，然后在此两者的基础上实现了其他衍生产品的高级功能。
 
-​        **Spring MVC** 提供了一种轻度耦合的方式来开发 Web 应用。它是 Spring 的一个模块，是一个 Web 框架。通过 DispatcherServlet、ModelAndView 和 View Resolver，开发 Web 应用变得很容易；解决的问题领域是网站应用程序或者服务开发 -- URL路由、Session、模版引擎、静态 Web 资源等等。
+**Spring MVC** 提供了一种轻度耦合的方式来开发 Web 应用。它是 Spring 的一个模块，是一个 Web 框架。通过 DispatcherServlet、ModelAndView 和 View Resolver，开发 Web 应用变得很容易；解决的问题领域是网站应用程序或者服务开发 -- URL路由、Session、模版引擎、静态 Web 资源等等。
 
-​        **SpringBoot** 实现了 auto-configuration **自动配置**（另外还有三大神器：actuator监控、cli 命令行接口、starter依赖），降低了项目搭建的复杂度。它主要为了解决使用 Spring 框架需要进行大量的配置的麻烦问题，所以它并不是用来替代 Spring 的解决方案，而是和 Spring 框架紧密结合用于提升 Spring 开发体验的工具，同时集成了大量常用的第三方库配置（如 Jackson、JDBC、Mongo、Redis等等），SpringBoot 应用中这些第三方库几乎可以领配置的开箱即用（out-of-the-box）。
+**SpringBoot** 实现了 auto-configuration **自动配置**（另外还有三大神器：actuator监控、cli 命令行接口、starter依赖），降低了项目搭建的复杂度。它主要为了解决使用 Spring 框架需要进行大量的配置的麻烦问题，所以它并不是用来替代 Spring 的解决方案，而是和 Spring 框架紧密结合用于提升 Spring 开发体验的工具，同时集成了大量常用的第三方库配置（如 Jackson、JDBC、Mongo、Redis等等），SpringBoot 应用中这些第三方库几乎可以领配置的开箱即用（out-of-the-box）。
 
 ## 二. SpringBoot 启动原理及相关流程概述
 
-​        SpringBoot 是基于 Spring 框架的新型的轻量级框架，最厉害的地方就是其**自动配置**。可以根据启动流程和相关原理来看看，如何实现传奇的自动配置。
+SpringBoot 是基于 Spring 框架的新型的轻量级框架，最厉害的地方就是其**自动配置**。可以根据启动流程和相关原理来看看，如何实现传奇的自动配置。
 
 ![1](./images/SpringBoot_Initial_progress/1.png)
 
 ## 三. SpringBoot 的启动类入口
 
-​        用过 SpringBoot的人都知道，SpringBoot有自己的**独立的启动类**（独立程序）：
+用过 SpringBoot的人都知道，SpringBoot有自己的**独立的启动类**（独立程序）：
 
 ```java
 @SpringBootApplication
@@ -31,7 +31,7 @@ public class Application {
 }
 ```
 
-​        从启动类大代码来看，Annotation定义（***@SpringBootApplication***）和类定义（***SpringApplication.run()***）最为耀眼，所以要揭开SpringBoot的面纱，就要从两个类开始。
+从启动类大代码来看，Annotation定义（***@SpringBootApplication***）和类定义（***SpringApplication.run()***）最为耀眼，所以要揭开SpringBoot的面纱，就要从两个类开始。
 
 ## 四. 单单是SpringBootApplication接口用到的注解
 
@@ -52,7 +52,7 @@ public @interface SpringBootApplication {
 
 ![2](./images/SpringBoot_Initial_progress/2.png)
 
-​        其中比较重要的是三个注解分别是：
+其中比较重要的是三个注解分别是：
 
 1. @SpringBootConfiguration ：继承了 Configuration，表示当前是注解类
 2. @EnableAutoConfiguration ：开启SpringBoot的注解功能，SpringBoot 的四大神器之一，其借助 @import 的帮助
@@ -60,7 +60,7 @@ public @interface SpringBootApplication {
 
 ### 4.1 @Configuration注解
 
-​        按照原来 XML 配置文件的形式，在 SprintBoot 中大多使用配置类来解决配置问题。
+按照原来 XML 配置文件的形式，在 SprintBoot 中大多使用配置类来解决配置问题。
 
 #### 4.1.1 Bean的配置方式区别
 
@@ -140,21 +140,21 @@ public @interface SpringBootApplication {
 
 ### 4.2 @ComponentScan 注解
 
-​        这个注解的作用主要有以下几点：
+这个注解的作用主要有以下几点：
 
 * 对应 XML 配置中的元素
 * ComponentScan 的功能其实就是自动扫描并加载符合条件的组件（比如 @Component 和 @Repository等）或者 Bean 的定义
 * 将这些 Bean 定义加载到 IoC 容器中
 
-​        可以通过 basePackages 等属性来**细粒度**的定制 @ComponentScan 自动扫描的范围。如果不指定，则**默认是 Spring 框架实现从声明 @ComponentScan 所在类的package进行扫描**。
+可以通过 basePackages 等属性来**细粒度**的定制 @ComponentScan 自动扫描的范围。如果不指定，则**默认是 Spring 框架实现从声明 @ComponentScan 所在类的package进行扫描**。
 
 > ps：SpringBoot的启动类最好放在*root package*下，因为默认不指定 *basePackage*
 
 ### 4.3 @EnableAutoConfiguration
 
-​        SpringBoot的最大优势就是**自动配置**。而这个Annotation就是为自动配置定义的，应该是SpringBoot中最重要的一个Annotation了。
+SpringBoot的最大优势就是**自动配置**。而这个Annotation就是为自动配置定义的，应该是SpringBoot中最重要的一个Annotation了。
 
-​        在 Spring 中提供了各种以 **@Enable** 开头的注解，例如：@EnableScheduling、@EnableCaching、@EnableMBeanExport 等。@EnableAutoConfiguration 的理念和做事方式其实一脉相承，简单而言，就是借助 @Import 的支持，收集和注册特定场景相关的 Bean 定义：
+在 Spring 中提供了各种以 **@Enable** 开头的注解，例如：@EnableScheduling、@EnableCaching、@EnableMBeanExport 等。@EnableAutoConfiguration 的理念和做事方式其实一脉相承，简单而言，就是借助 @Import 的支持，收集和注册特定场景相关的 Bean 定义：
 
 * @EnableScheduling 是通过 @Import 将 Spring 调度框架相关的 Bean 定义都加载到了IoC容器里（包含：定时任务、时间调度任务）
 

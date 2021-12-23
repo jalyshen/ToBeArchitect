@@ -12,15 +12,15 @@
 
 ![2](./images/Spring_Event/2.webp)
 
-​        Spring 的 Event 机制就是一个 ***发布-订阅*** 模式。
+Spring 的 Event 机制就是一个 ***发布-订阅*** 模式。
 
-​        有 三个核心类：
+有 三个核心类：
 
 1. 事件：***ApplicationEvent***
 2. 事件发布器：***ApplicationEventPublisher***
 3. 事件监听器：***ApplicationListener***
 
-​        事件发布器发布事件，监听器监听到对应的事件后，做出相应的反应。
+事件发布器发布事件，监听器监听到对应的事件后，做出相应的反应。
 
 ## 三. 使用
 
@@ -48,7 +48,7 @@
 
 ### 3.3 提醒
 
-​        体量小的系统可以使用，大系统需要直接用消息中间件来解决。都是消息驱动思想。
+体量小的系统可以使用，大系统需要直接用消息中间件来解决。都是消息驱动思想。
 
 ## 四. 项目实战
 
@@ -56,7 +56,7 @@
 
 ### 4.1 功能
 
-​        根据反馈事件去发送短信和邮件
+根据反馈事件去发送短信和邮件
 
 ### 4.2 主要源码
 
@@ -162,7 +162,7 @@ public class SendSmsListener {
 
 ### 4.3 小结
 
-​        通过例子可以看出，事件模型在 Spring 框架下已经很简单了。下面是上述例子的整体流程：
+通过例子可以看出，事件模型在 Spring 框架下已经很简单了。下面是上述例子的整体流程：
 
 ![4](./images/Spring_Event/4.webp)
 
@@ -172,11 +172,11 @@ public class SendSmsListener {
 
 ​        ![5](./images/Spring_Event/5.webp)
 
-​        这个方法在 **事件多播器** ( *SimpleApplicationEventMulticaster* ) 中，可以看到当有配置这个**线程池**时，是走**异步**通知路线的。
+这个方法在 **事件多播器** ( *SimpleApplicationEventMulticaster* ) 中，可以看到当有配置这个**线程池**时，是走**异步**通知路线的。
 
 ### 5.1 怎么调用监听器
 
-​        只有简单的 3 步，最后回到 ***onApplicationEvent*** 方法中去处理：
+只有简单的 3 步，最后回到 ***onApplicationEvent*** 方法中去处理：
 
 > ***invokeListener -> doInvokeListener -> onApplicationEvent***
 

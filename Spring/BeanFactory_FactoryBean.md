@@ -4,30 +4,30 @@
 
 
 
-​        **BeanFactory** 是 Spring 中**比较原始的Factory**。如 XMLBeanFactory 就是一种典型的BeanFactory。原始的BeanFactory无法支持Spring的许多插件，如AOP功能、Web应用等。
+**BeanFactory** 是 Spring 中**比较原始的Factory**。如 XMLBeanFactory 就是一种典型的BeanFactory。原始的BeanFactory无法支持Spring的许多插件，如AOP功能、Web应用等。
 
-​        **ApplicationContext** 接口，它由 **BeanFactory** 接口派生而来。ApplicationContext 包含 BeanFactory 的所有功能，通常建议比 BeanFactory 优先使用。
+**ApplicationContext** 接口，它由 **BeanFactory** 接口派生而来。ApplicationContext 包含 BeanFactory 的所有功能，通常建议比 BeanFactory 优先使用。
 
 ## 一. BeanFactory和 FactoryBean的区别
 
-​        **BeanFactory 是接口，提供了 IoC 容器的最基本形式**，给具体的 IoC 容器的实现提供了规范。
+**BeanFactory 是接口，提供了 IoC 容器的最基本形式**，给具体的 IoC 容器的实现提供了规范。
 
-​        **FactoryBean 也是接口，为 IoC 容器中的Bean的实现（实例化）提供了更加灵活的方式**。FactoryBean 在 IoC 容器的基础上给Bean 的实现（实例化）加上了一个简单工厂模式和装饰模式，可以在 getObject() 方法中灵活配置。其实，在Spring源码中有很多FactoryBean的实现类。
+**FactoryBean 也是接口，为 IoC 容器中的Bean的实现（实例化）提供了更加灵活的方式**。FactoryBean 在 IoC 容器的基础上给Bean 的实现（实例化）加上了一个简单工厂模式和装饰模式，可以在 getObject() 方法中灵活配置。其实，在Spring源码中有很多FactoryBean的实现类。
 
 * **区别**：BeanFactory 是一个 Factory，也就是 IoC 容器或者对象工厂；FactoryBean 是一个 Bean。在 Spring 中，所有的 Bean 都是由 BeanFactory（也就是 IoC 容器）来进行管理的。
 * 但是对于 FactoryBean 而言，这个 Bean 不是简单的Bean，而是一个能生产或者修改对象生成的工厂 Bean，它的实现和设计模式中的工厂模式和装饰器模式类似。
 
 ### 1.1 BeanFactory
 
-​        BeanFactory，以 **Factory** 结尾，表示它是一个工厂类（接口），它是负责生产和管理Bean的一个工厂。在 Spring 中，**BeanFactory 是 IoC 容器的核心接口，它的职责包括：实例化、定位、配置应用程序中的对象以及建立这些对象间的依赖**。
+BeanFactory，以 **Factory** 结尾，表示它是一个工厂类（接口），它是负责生产和管理Bean的一个工厂。在 Spring 中，**BeanFactory 是 IoC 容器的核心接口，它的职责包括：实例化、定位、配置应用程序中的对象以及建立这些对象间的依赖**。
 
-​        BeanFactory 只是一个接口，并不是 IoC 容器的具体实现，但是 Spring 容器给出了很多种实现，如：DefaultListableBeanFactory、XmlBeanFacotory、ApplicationContext等，其中 XmlBeanFactory 就是常用的一个，该实现将以 XML 方式描述组成应用的对象以及对象间的依赖关系。XmlBeanFactory 类将持有此 XML 配置元数据，并用它来构建一个完全可以配置的系统或者应用。
+BeanFactory 只是一个接口，并不是 IoC 容器的具体实现，但是 Spring 容器给出了很多种实现，如：DefaultListableBeanFactory、XmlBeanFacotory、ApplicationContext等，其中 XmlBeanFactory 就是常用的一个，该实现将以 XML 方式描述组成应用的对象以及对象间的依赖关系。XmlBeanFactory 类将持有此 XML 配置元数据，并用它来构建一个完全可以配置的系统或者应用。
 
-​        都是附加了某种功能的实现。它为其他具体的 IoC 容器提供了最基本的规范，例如：DefaultListableBeanFactory，XmlBeanFactory，ApplicationContext 等具体的容器都是实现了 BeanFactory，再在其基础上附加了其他的功能。
+都是附加了某种功能的实现。它为其他具体的 IoC 容器提供了最基本的规范，例如：DefaultListableBeanFactory，XmlBeanFactory，ApplicationContext 等具体的容器都是实现了 BeanFactory，再在其基础上附加了其他的功能。
 
-​        BeanFactory 和 ApplicationContext 就是 Spring 框架的两个 IoC 容器，现在一般使用 ApplicationContext，其不但包含了 BeanFactory 的所有功能（作用），同时还进行了更多的扩展。
+BeanFactory 和 ApplicationContext 就是 Spring 框架的两个 IoC 容器，现在一般使用 ApplicationContext，其不但包含了 BeanFactory 的所有功能（作用），同时还进行了更多的扩展。
 
-​        原始的 BeanFactory 无法支持 Spring 的许多插件，如 AOP 功能、Web引用等。而ApplicationContext 继承 BeanFactory，并且以一种更面向框架的方式工作，以及对上下文进行分层和实现继承，它提供了以下的功能：
+原始的 BeanFactory 无法支持 Spring 的许多插件，如 AOP 功能、Web引用等。而ApplicationContext 继承 BeanFactory，并且以一种更面向框架的方式工作，以及对上下文进行分层和实现继承，它提供了以下的功能：
 
 * MessageSource，提供国际化的消息访问
 * 资源访问，如 URI 和文件
@@ -61,7 +61,7 @@
   BeanFactory factory = (BeanFactory) context;
   ```
 
-​        基本就是这些了，接着使用 ***getBean(String beanName)*** 方法就可以取得 bean 的实例；BeanFactory 提供的方法及极其简单，仅提供了六种方法供客户调用：
+基本就是这些了，接着使用 ***getBean(String beanName)*** 方法就可以取得 bean 的实例；BeanFactory 提供的方法及极其简单，仅提供了六种方法供客户调用：
 
 * **boolean containsBean(String name)**: 判断工厂中是否包含给定名称的 bean 的定义，若有，则返回 true；否则返回 false
 * **Object getBean(String name)**: 返回给定名称注册的 bean 实例。根据 bena 的配置情况，如果是 singleton 模式将返回一个共享实例，否则返回一个新建的实例。如果没有找到指定的 bean，该方法可能会抛出一个异常
@@ -72,13 +72,13 @@
 
 ### 1.2 FactoryBean
 
-​        一般情况下，Spring 通过**反射机制**利用 <bean> 的 class 属性指定实现类实例化 Bean，在某些情况下，实例化 Bean 过程比较复杂，如果按照传统的方式，则需要在 <bean> 中提供大量的配置信息。配置方式的灵活性是受限的，这时采用编码的方式可能会得到一个简单的方案。
+一般情况下，Spring 通过**反射机制**利用 <bean> 的 class 属性指定实现类实例化 Bean，在某些情况下，实例化 Bean 过程比较复杂，如果按照传统的方式，则需要在 <bean> 中提供大量的配置信息。配置方式的灵活性是受限的，这时采用编码的方式可能会得到一个简单的方案。
 
-​       Spring 为此提供了一个 **FactoryBean 的工厂类接口**，用户可以通过**实现**该接口**定制实例化 Bean 的逻辑**。FactoryBean 接口对于 Spring 框架来说，占据重要的地位，Spring 本身就提供了 70 多个 FactoryBean 的实现。它们隐藏了实例化一些复杂 Bean 的细节，给上层应用带来了便利。从 Spring 3.0 开始，FactoryBean 开始支持泛型，即接口声明改成了 ***FactoryBean<T>*** 的形式。
+Spring 为此提供了一个 **FactoryBean 的工厂类接口**，用户可以通过**实现**该接口**定制实例化 Bean 的逻辑**。FactoryBean 接口对于 Spring 框架来说，占据重要的地位，Spring 本身就提供了 70 多个 FactoryBean 的实现。它们隐藏了实例化一些复杂 Bean 的细节，给上层应用带来了便利。从 Spring 3.0 开始，FactoryBean 开始支持泛型，即接口声明改成了 ***FactoryBean<T>*** 的形式。
 
-​        FactoryBean 以 Bean 结尾，它表示一个 Bean，但又不同于普通的Bean：它是实现了FactoryBean<T> 接口的 Bean，根据该 Bean 的 ID 从 BeanFactory 中获取的实际上是 FactoryBean 的 ***getObject()*** 返回的对象，而不是 FactoryBean 本身。如果要获取 FactoryBean 对象，请在 ID 前面加一个 **&** 符号来获取。
+FactoryBean 以 Bean 结尾，它表示一个 Bean，但又不同于普通的Bean：它是实现了FactoryBean<T> 接口的 Bean，根据该 Bean 的 ID 从 BeanFactory 中获取的实际上是 FactoryBean 的 ***getObject()*** 返回的对象，而不是 FactoryBean 本身。如果要获取 FactoryBean 对象，请在 ID 前面加一个 **&** 符号来获取。
 
-​        例如，自己实现了一个 FactoryBean，功能如下：用来代理一个对象，对该对象的所有方法做一个拦截，在调用前后都输出一行log，模仿 ProxyFactoyBean 的功能：
+例如，自己实现了一个 FactoryBean，功能如下：用来代理一个对象，对该对象的所有方法做一个拦截，在调用前后都输出一行log，模仿 ProxyFactoyBean 的功能：
 
 ```java
 /**
@@ -205,9 +205,9 @@ public class MyFactoryBeanTest {
 }
 ```
 
-​        FactoryBea 是一个接口，当在 IoC 容器中的 Bean 实现了 FactoryBean 后，通过 getBean(String beanName) 获取到的 Bean 对象并不是 FactoryBean 的实现类对象，而是这个实现类中的 ***getObject()*** 方法返回的对象。要想获得 FactoryBean 的实现类，就要 ***getBean(&BeanName)***，在 beanName之前加上 <font color='red'>***&***</font>。
+FactoryBea 是一个接口，当在 IoC 容器中的 Bean 实现了 FactoryBean 后，通过 getBean(String beanName) 获取到的 Bean 对象并不是 FactoryBean 的实现类对象，而是这个实现类中的 ***getObject()*** 方法返回的对象。要想获得 FactoryBean 的实现类，就要 ***getBean(&BeanName)***，在 beanName之前加上 <font color='red'>***&***</font>。
 
-​        FactoryBean 接口如下：
+FactoryBean 接口如下：
 
 ```java
 package org.springframework.beans.factory;  
@@ -226,9 +226,9 @@ public interface FactoryBean<T> {
 
 
 
-​        当配置文件中 <bean> 的 class 属性配置的实现类是 FactoryBean 时，通过 ***getBean()*** 方法返回的不是 FactoryBean 本身，而是 *FactoryBean#getObject()* 方法所返回的对象，相当于 *FactoryBean#getObject()* 代理了 getBean() 方法。
+当配置文件中 <bean> 的 class 属性配置的实现类是 FactoryBean 时，通过 ***getBean()*** 方法返回的不是 FactoryBean 本身，而是 *FactoryBean#getObject()* 方法所返回的对象，相当于 *FactoryBean#getObject()* 代理了 getBean() 方法。
 
-​        例如：如果使用传统方法配置下面的 Car 对象的 <bean> 时， Car 的每个属性分别对应一个 <property> 元素标签：
+例如：如果使用传统方法配置下面的 Car 对象的 <bean> 时， Car 的每个属性分别对应一个 <property> 元素标签：
 
 ```java
 public   class  Car  {  
@@ -262,7 +262,7 @@ public   class  Car  {
 }
 ```
 
-​        如果用 FactoryBean 的方式实现就灵活点儿，下面通过逗号分隔符的方式一次性的为 Car 的所有属性指定配置值：
+如果用 FactoryBean 的方式实现就灵活点儿，下面通过逗号分隔符的方式一次性的为 Car 的所有属性指定配置值：
 
 ```java
 import  org.springframework.beans.factory.FactoryBean;  
@@ -300,9 +300,9 @@ public class  CarFactoryBean  implements  FactoryBean<Car>  {
         P:carInfo="法拉利,400,2000000"/>
 ```
 
-​        当调用 getBean("car") 时，Spring 通过反射机制发现 CarFactoryBean 实现了 FactoryBean 的接口，这时 Spring 容器就调用接口方法 CarFactoryBean#getObject() 方法返回。如果希望获取 CarFactoryBean 实例，则需要在使用 getBean(beanName) 方法时在 beanName 前**显式**的加上"**&**"前缀，如： getBean("&car");
+当调用 getBean("car") 时，Spring 通过反射机制发现 CarFactoryBean 实现了 FactoryBean 的接口，这时 Spring 容器就调用接口方法 CarFactoryBean#getObject() 方法返回。如果希望获取 CarFactoryBean 实例，则需要在使用 getBean(beanName) 方法时在 beanName 前**显式**的加上"**&**"前缀，如： getBean("&car");
 
-​        下面是一个应用 FactoryBean 的例子：
+下面是一个应用 FactoryBean 的例子：
 
 ```xml
 <beans xmlns="http://www.springframework.org/schema/beans"  
@@ -452,6 +452,6 @@ com.spring.bean.Student
 com.spring.bean.FactoryBeanPojo
 ```
 
-​        从结果上可以看到当从 IOC 容器中获取FactoryBeanPojo对象的时候，用getBean(String BeanName)获取的确是Student对象，可以看到在FactoryBeanPojo中的type属性设置为student的时候，会在getObject()方法中返回Student对象。
+从结果上可以看到当从 IOC 容器中获取FactoryBeanPojo对象的时候，用getBean(String BeanName)获取的确是Student对象，可以看到在FactoryBeanPojo中的type属性设置为student的时候，会在getObject()方法中返回Student对象。
 
-​        所以说从IOC容器获取实现了FactoryBean的实现类时，返回的却是实现类中的getObject方法返回的对象，要想获取FactoryBean的实现类，得在getBean(String BeanName)中的BeanName之前加上&,写成getBean(String &BeanName)。
+所以说从IOC容器获取实现了FactoryBean的实现类时，返回的却是实现类中的getObject方法返回的对象，要想获取FactoryBean的实现类，得在getBean(String BeanName)中的BeanName之前加上&,写成getBean(String &BeanName)。

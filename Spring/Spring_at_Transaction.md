@@ -142,8 +142,6 @@ public class UserService {
 
 下面开始分析几个@Transactional没有起作用的原因。
 
-
-
 ## 2. @Transactional不起作用的几种情况
 
 ### 2.1 没有开启事务管理

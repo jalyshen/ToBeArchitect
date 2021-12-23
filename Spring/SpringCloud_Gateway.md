@@ -4,17 +4,17 @@
 
 
 
-​        SpringCloud Gateway 是基于 Spring5.0， SpringBoot 2.0 和 Project Reactor 等技术开发的网关。它旨在为微服务架构提供一种简单有效的统一的 API 路由管理方式。
+SpringCloud Gateway 是基于 Spring5.0， SpringBoot 2.0 和 Project Reactor 等技术开发的网关。它旨在为微服务架构提供一种简单有效的统一的 API 路由管理方式。
 
-​        SpringCloud Gateway 的目标是替代 Zuul，Gateway 是基于 WebFlux 框架实现的，而 WebFlux 框架底层则使用了高性能的 Reactor 模式通信框架 Netty。
+SpringCloud Gateway 的目标是替代 Zuul，Gateway 是基于 WebFlux 框架实现的，而 WebFlux 框架底层则使用了高性能的 Reactor 模式通信框架 Netty。
 
-​        SpringCloud Gateway的目标，不仅仅提供统一的路由方式，更是基于 Filter 链的方式提供了网关基本功能，如：安全、监控/指标、限流等。
+SpringCloud Gateway的目标，不仅仅提供统一的路由方式，更是基于 Filter 链的方式提供了网关基本功能，如：安全、监控/指标、限流等。
 
 
 
 ## 一. SpringCloud Gateway 特征
 
-​        SpringCloud 官方介绍中，罗列的这些 Gateway 的特征：
+SpringCloud 官方介绍中，罗列的这些 Gateway 的特征：
 
 1. 基于 Spring Framework 5， Project Reactor 和 Sprint Boot 2.0
 2. 集成 Hystrix 断路器
@@ -22,9 +22,9 @@
 4. Predicates 和 Filters 作用于特定路由，易于编写的 Predicates 和 Filters
 5. 具备一些网关的高级功能：动态路由、限流、路径重写
 
-​        从以上的特征来说，和 Zuul 的特征差别不大，主要差别在于底层的通信框架上。
+从以上的特征来说，和 Zuul 的特征差别不大，**主要差别在于底层的通信框架上**。
 
-​        简要说明一下上面提到的三个术语：
+简要说明一下上面提到的三个术语：
 
 1. Filter（过滤器）：
 
@@ -40,35 +40,35 @@
 
 ## 二. SpringCloud Gateway 和架构
 
-​        Spring 在 2017 年下半年开始提供 WebFlux，WebFlux 的出现为 Spring 带来了响应式编程。WebFlux 的响应式编程不仅仅是编程风格的改变，而且是对于一系列的著名框架都提供了响应式访问的开发包，包括 Netty、Redis 等。
+Spring 在 2017 年下半年开始提供 WebFlux，WebFlux 的出现为 Spring 带来了响应式编程。WebFlux 的响应式编程不仅仅是编程风格的改变，而且是对于一系列的著名框架都提供了响应式访问的开发包，包括 Netty、Redis 等。
 
-​        SpringCloud Gateway 使用的 WebFlux 中的 reactor-netty 响应式编程组件，底层使用了 Netty 通讯框架。如下图所示：
+SpringCloud Gateway 使用的 WebFlux 中的 reactor-netty 响应式编程组件，底层使用了 Netty 通讯框架。如下图所示：
 
 ![2-1](./images/spring_cloud/SpringCloud_Gateway/2-1.gif)
 
 ### 2.1 SpringCloud Zuul 的 I/O 模型
 
-​        Zuul 采用的是 Tomcat 容器，使用的是传统的 Servlet IO 处理模型。
+Zuul 采用的是 Tomcat 容器，使用的是传统的 Servlet IO 处理模型。
 
-​        servlet 由 servlet Container 进行生命周期管理。container 启动时，构造 servlet 对象并调用 servlet.init() 进行初始化；container 关闭时调用 servlet.destory() 销毁 servlet；container 运行时接受请求，并为每个请求分配一个线程（一般从线程池中获取空闲线程）然后调用 service()。
+servlet 由 servlet Container 进行生命周期管理。container 启动时，构造 servlet 对象并调用 servlet.init() 进行初始化；container 关闭时调用 servlet.destory() 销毁 servlet；container 运行时接受请求，并为每个请求分配一个线程（一般从线程池中获取空闲线程）然后调用 service()。
 
-​        弊端：servlet 是一个简单的网络IO模型，当请求进入 servlet container 时，servlet container 就会为其绑定一个线程，在并发不高的场景下这种模型是适用的，但是一旦并发升高，线程数量就会上涨，而线程资源代价是昂贵的（上下文切换、内存消耗大），严重影响请求的处理时间。在一些简单的业务场景下，不希望为每个 request 分配一个线程，只需要 1 个或者几个线程就能应对极大的并发的请求。这种业务场景下 servlet 模型无法适应。
+弊端：servlet 是一个简单的网络IO模型，当请求进入 servlet container 时，servlet container 就会为其绑定一个线程，在并发不高的场景下这种模型是适用的，但是一旦并发升高，线程数量就会上涨，而线程资源代价是昂贵的（上下文切换、内存消耗大），严重影响请求的处理时间。在一些简单的业务场景下，不希望为每个 request 分配一个线程，只需要 1 个或者几个线程就能应对极大的并发的请求。这种业务场景下 servlet 模型无法适应。
 
 ![2-2](./images/spring_cloud/SpringCloud_Gateway/2-2.jpeg)
 
-​        所以 SpringCloud Zuul 是基于 Servlet 之上的一个阻塞式处理模型，即Spring 实现了处理所有 request 请求的一个 servlet （DispatcherServlet），并由该 servlet 阻塞式处理业务。所以 Zuul 无法摆脱 Servlet 模型的弊端。
+所以 SpringCloud Zuul 是基于 Servlet 之上的一个阻塞式处理模型，即Spring 实现了处理所有 request 请求的一个 servlet （DispatcherServlet），并由该 servlet 阻塞式处理业务。所以 Zuul 无法摆脱 Servlet 模型的弊端。
 
 ### 2.2 WebFlux服务器
 
-​        WebFlux 模式替换了 servlet 线程模型。用少量的线程处理 request 和response 的 IO 操作，这些线程称为 **Loop 线程**。而业务交给响应式编程框架处理，响应式编程是非常灵活的，用户可以将业务中阻塞的操作提交到响应式框架的 **work 线程**中执行，而不阻塞的操作依然可以在 **Loop 线程**中进行处理，大大提高了 Loop 线程的利用率。下面是官方结构图：
+WebFlux 模式替换了 servlet 线程模型。用少量的线程处理 request 和response 的 IO 操作，这些线程称为 **Loop 线程**。而业务交给响应式编程框架处理，响应式编程是非常灵活的，用户可以将业务中阻塞的操作提交到响应式框架的 **work 线程**中执行，而不阻塞的操作依然可以在 **Loop 线程**中进行处理，大大提高了 Loop 线程的利用率。下面是官方结构图：
 
 ![2-3](./images/spring_cloud/SpringCloud_Gateway/2-3.jpeg)
 
-​        WebFlux 虽然可以兼容多个底层的通信框架，但是一般情况下，底层使用的还是 Netty，毕竟 Netty 是目前 业界最高性能的通信框架。而 WebFlux 的 Loop 线程，正好就是著名的 Reactor 模式 IO 处理模型的 Reactor 线程，如果使用的是高性能的通信框架 Netty，这就是Netty的 EventLoop 线程。
+WebFlux 虽然可以兼容多个底层的通信框架，但是一般情况下，底层使用的还是 Netty，毕竟 Netty 是目前 业界最高性能的通信框架。而 WebFlux 的 Loop 线程，正好就是著名的 Reactor 模式 IO 处理模型的 Reactor 线程，如果使用的是高性能的通信框架 Netty，这就是Netty的 EventLoop 线程。
 
 ### 2.3 SpringCloud Gateway的处理流程
 
-​        客户端向 Gateway 发出请求，然后在 Gateway Handler Mapping 中找到与请求相匹配的路由，将其发送到 Gateway Web Handler。Handler 再通过指定的**过滤器链**将请求发送到实际的服务执行业务逻辑，然后返回。过滤器之间用虚线分开，是因为过滤器可能会在发送代理请求之前（pre）或之后（post）执行业务逻辑。
+客户端向 Gateway 发出请求，然后在 Gateway Handler Mapping 中找到与请求相匹配的路由，将其发送到 Gateway Web Handler。Handler 再通过指定的**过滤器链**将请求发送到实际的服务执行业务逻辑，然后返回。过滤器之间用虚线分开，是因为过滤器可能会在发送代理请求之前（pre）或之后（post）执行业务逻辑。
 
 ![2-4](./images/spring_cloud/SpringCloud_Gateway/2-4.jpeg)
 
@@ -76,7 +76,7 @@
 
 ### 3.1 基础 URI 路由配置方式
 
-​        如果请求的目标地址，是单个的 URI 资源路径，配置文件示例如下：
+如果请求的目标地址，是单个的 URI 资源路径，配置文件示例如下：
 
 ```yaml
 server:
@@ -93,7 +93,7 @@ spring:
             -Path=/csdn
 ```
 
-​        各个字段的含义如下：
+各个字段的含义如下：
 
 * **id**：自定义的路由ID，**确保唯一**
 * **uri**：目标服务地址
@@ -105,7 +105,7 @@ spring:
 
 ### 3.2 基于代码的路由配置方式
 
-​        转发功能同样可以通过代码来实现。可以在启动类 GatewayApplication 中添加方法 customRouteLocator() 来定制转发规则：
+转发功能同样可以通过代码来实现。可在启动类GatewayApplication中添加方法customRouteLocator()来定制转发规则：
 
 ```java
 package com.springcloud.gateway;
@@ -135,13 +135,13 @@ public class GatewayApplication {
 }
 ```
 
-​        这段代码与在 yaml 配置文件中的配置有完全一样的效果。
+这段代码与在 yaml 配置文件中的配置有完全一样的效果。
 
 ### 3.3 和注册中心相结合的路由配置方式
 
-​        在 URI 的 schema 协议部分，为自定义的 ***lb:类型***，表示从微服务注册中心（如Eureka）订阅服务，并且进行服务的路由。
+在 URI 的schema协议部分，为自定义的 ***lb:类型***，表示从微服务注册中心（如Eureka）订阅服务，并且进行服务的路由。
 
-​        一个典型的例子：
+一个典型的例子：
 
 ```yaml
 server:
@@ -171,17 +171,17 @@ eureka:
       defaultZone: http://localhost:8888/eureka/
 ```
 
-​        注册中心相结合的路由配置方式，与单个 URI 的路由配置，区别其实很小，仅仅在与 URI 的 schema 协议不同。当个 URI 的地址的 schema 协议，一般为 http 或者 https。
+注册中心相结合的路由配置方式，与单个 URI 的路由配置，区别其实很小，仅仅在与 URI 的 schema 协议不同。当个 URI 的地址的 schema 协议，一般为 http 或者 https。
 
 ## 四. 路由匹配规则
 
-​        Gateway 的功能很强大，仅仅通过 predicates 的设计就可以看出来。前面的介绍只是使用了 predicates 进行了简单的条件匹配，其实 Gateway 内置了很多 Predicates 工能。
+Gateway 的功能很强大，仅仅通过 predicates 的设计就可以看出来。前面的介绍只是使用了 predicates 进行了简单的条件匹配，其实 Gateway 内置了很多 Predicates 工能。
 
-​        Gateway 是通过 WebFlux 的 HandlerMapping 作为底层支持来匹配到转发路由，Spring Cloud Gateway 内置了很多 Predicates 工厂，这些 Predicates 工厂通过不同的 HTTP 请求参数来匹配，多个 Predicates 工厂可以组合使用。
+Gateway 是通过 WebFlux 的 HandlerMapping 作为底层支持来匹配到转发路由，Spring Cloud Gateway 内置了很多 Predicates 工厂，这些 Predicates 工厂通过不同的 HTTP 请求参数来匹配，多个 Predicates 工厂可以组合使用。
 
 ![4-1](./images/spring_cloud/SpringCloud_Gateway/4-1.png)
 
-​        Gateway 的主要功能之一，就是转发请求，转发规则的定义主要包含三个部分：
+Gateway 的主要功能之一，就是转发请求，转发规则的定义主要包含三个部分：
 
 | 功能       | 说明                                                         |
 | ---------- | ------------------------------------------------------------ |
@@ -191,7 +191,7 @@ eureka:
 
 其中，***Router 和 Predicate 必须同时申明***
 
-​        示例：
+示例：
 
 ```yaml
 //通过配置文件配置
@@ -211,13 +211,13 @@ spring:
 
 ### 4.1 Predicate 断言条件（转发规则）介绍
 
-​        Predicate 来源于 JDK 8，是 JDK 8 引入的一个函数。Predicate 接受一个输入参数，返回一个布尔值结果。该接口包含多种默认方法来将 Predicate 组合成其它复杂的逻辑（比如：与、或、非）。可以用于接口请求参数校验、判断新老数据是否有变化需要进行更新操作。
+Predicate 来源于 JDK 8，是 JDK 8 引入的一个函数。Predicate 接受一个输入参数，返回一个布尔值结果。该接口包含多种默认方法来将 Predicate 组合成其它复杂的逻辑（比如：与、或、非）。可以用于接口请求参数校验、判断新老数据是否有变化需要进行更新操作。
 
-​        在 Gateway 中 Spring 利用 Predicate 的特性实现了各种路由匹配规则，有通过 Header、请求参数等不同的条件来进行作为条件匹配到对应的路由。下图总结了 Gateway 内置的各种 Predicate 的实现：
+在 Gateway 中 Spring 利用 Predicate 的特性实现了各种路由匹配规则，有通过 Header、请求参数等不同的条件来进行作为条件匹配到对应的路由。下图总结了 Gateway 内置的各种 Predicate 的实现：
 
 ![4-2](./images/spring_cloud/SpringCloud_Gateway/4-2.gif)
 
-​        接下来介绍 Gateway 内置几种 Predicate 的使用。假定转发 URI 都设定为 http://localhost:9023
+接下来介绍 Gateway 内置几种 Predicate 的使用。假定转发 URI 都设定为 http://localhost:9023
 
 | 规则(Predicates) | 实例                                                         | 说明                                                         |
 | ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -234,7 +234,7 @@ spring:
 
 #### 4.1.1 通过请求参数匹配
 
-​        Query Route Predicate 支持传入两个参数，一个是属性名，一个是属性值。属性值可以是正则表达式。
+Query Route Predicate 支持传入两个参数，一个是属性名，一个是属性值。属性值可以是正则表达式。
 
 ```yaml
 server:
@@ -252,9 +252,9 @@ spring:
             -Query=smile
 ```
 
-​        这样配置，只要请求中包含 smile 属性的参数即可匹配路由。例如：使用 curl 测试，输入 ***curl localhost:8080?smile=x&id=2***，URL 的查询参数中带有 *smile* ，则该请求会被赚转到baidu，不带 smile 的则不会匹配。
+这样配置，只要请求中包含 smile 属性的参数即可匹配路由。例如：使用 curl 测试，输入 ***curl localhost:8080?smile=x&id=2***，URL 的查询参数中带有 *smile* ，则该请求会被赚转到baidu，不带 smile 的则不会匹配。
 
-​        还可以将 Query 的值以键值对的方式进行配置，这样在请求过来时会对属性值和正则进行匹配，匹配上就会走路由：
+还可以将 Query 的值以键值对的方式进行配置，这样在请求过来时会对属性值和正则进行匹配，匹配上就会走路由：
 
 ```yaml
 server:
@@ -272,11 +272,11 @@ spring:
             -Query=keep, pu.
 ```
 
-​        这样，只要请求中包含 ***keep*** 属性，**并且** 参数值是以 **pu** 开头的长度为三位的字符串才会进行匹配和路由。例如：使用curl 测试，输入 ***curl localhost:8080?keep=pub*** ，测试可以跳转到baidu，如果改成 ***curl localhost:8080?keep=pubx***，则提示404错误。
+这样，只要请求中包含 ***keep*** 属性，**并且** 参数值是以 **pu** 开头的长度为三位的字符串才会进行匹配和路由。例如：使用curl 测试，输入 ***curl localhost:8080?keep=pub*** ，测试可以跳转到baidu，如果改成 ***curl localhost:8080?keep=pubx***，则提示404错误。
 
 #### 4.1.2 通过 Header 属性匹配
 
-​       Header Route Predicate 和 Cookie Route Predicate 一样，也接收 2 个参数，一个 header 中属性名称，另一个正则表达式。这个属性值和正则表达式都匹配上就执行路由：
+Header Route Predicate 和 Cookie Route Predicate 一样，也接收 2 个参数，一个 header 中属性名称，另一个正则表达式。这个属性值和正则表达式都匹配上就执行路由：
 
 ```yaml
 server:
@@ -294,11 +294,11 @@ spring:
             - Header=X-Request-Id, \d+
 ```
 
-​        使用 curl 测试，输入： ***curl hitp://localhost:8080 -H "X-Request-Id:88"***，则跳转到百度，如果改成 ***curl hitp://localhost:8080 -H "X-Request-Id:spring"***，则返回404
+使用 curl 测试，输入： ***curl hitp://localhost:8080 -H "X-Request-Id:88"***，则跳转到百度，如果改成 ***curl hitp://localhost:8080 -H "X-Request-Id:spring"***，则返回404
 
 #### 4.1.3 通过 Cookie 匹配
 
-​        Cookie Route Predicate 可以接收两个参数：一个是 Cookie 名字，另一个是正则表达式。路由规则会通过对应的 Cookie名称值和正则表达式来匹配。例如：
+Cookie Route Predicate 可以接收两个参数：一个是 Cookie 名字，另一个是正则表达式。路由规则会通过对应的 Cookie名称值和正则表达式来匹配。例如：
 
 ```yaml
 server:
@@ -320,7 +320,7 @@ spring:
 
 #### 4.1.4 通过 Host 匹配
 
-​        Host Route Predicate 接收一组参数，一组匹配的域名列表，这个模版是一个 ant 分割的模版，用 . 号作为分隔符。它通过参数中的主机地址作为匹配规则
+Host Route Predicate 接收一组参数，一组匹配的域名列表，这个模版是一个 ant 分割的模版，用 . 号作为分隔符。它通过参数中的主机地址作为匹配规则
 
 ```yaml
 server:
@@ -347,7 +347,7 @@ spring:
 
 #### 4.1.5 通过请求方式匹配
 
-​        可以通过 POST、GET、PUT、DELETE 等不同的请求方式来进行匹配。
+可以通过 POST、GET、PUT、DELETE 等不同的请求方式来进行匹配。
 
 ```yaml
 server:
@@ -409,7 +409,7 @@ spring:
 
 #### 4.1.7 通过请求 IP 匹配
 
-​        predicate 也支持通过设置某个 ip 区间号段的请求才会路由，RemoteAddr Route Predicate 接受 cidr 符号(IPv4 或 IPv6 )字符串的列表(最小大小为1)，例如 192.168.0.1/16 (其中 192.168.0.1 是 IP 地址，**16 是子网掩码**)。
+predicate 也支持通过设置某个 ip 区间号段的请求才会路由，RemoteAddr Route Predicate 接受 cidr 符号(IPv4 或 IPv6 )字符串的列表(最小大小为1)，例如 192.168.0.1/16 (其中 192.168.0.1 是 IP 地址，**16 是子网掩码**)。
 
 ```yaml
 server:
@@ -490,7 +490,7 @@ spring:
 
 #### 4.2.2 RedirctTo
 
-​        重定向，配置包含重定向的**返回码**和**地址**：
+重定向，配置包含重定向的**返回码**和**地址**：
 
 ```yaml
 spring:
@@ -505,7 +505,7 @@ spring:
 
 #### 4.2.3 RemoveRequestHeader
 
-​         去掉某个请求头信息：
+去掉某个请求头信息：
 
 ```yaml
 spring:
@@ -522,7 +522,7 @@ spring:
 
 #### 4.2.4 RemoveResponseHeader
 
-​        去掉某个回执头信息：
+去掉某个回执头信息：
 
 ```yaml
 spring:
@@ -537,7 +537,7 @@ spring:
 
 #### 4.2.5 RemoveRequestParameter
 
-​        去掉某个请求参数信息：
+去掉某个请求参数信息：
 
 ```yaml
 spring:
@@ -552,7 +552,7 @@ spring:
 
 #### 4.2.6 RewritePath
 
-​       改写路径：
+改写路径：
 
 ```yaml
 spring:
@@ -569,7 +569,7 @@ spring:
 
  /where/... 改成 /test/...
 
-​        使用代码改写路径：
+使用代码改写路径：
 
 ```java
 RouteLocatorBuilder.Builder builder = routeLocatorBuilder.routes();
