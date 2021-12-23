@@ -6,13 +6,13 @@
 
 ## 一. AQS 介绍
 
-​        AbstractQueuedSynchronizer（AQS） 是 Java 中非常重要的一个框架类，它实现了最核心的多线程同步语义，只要继承 AbstractQueuedSynchronizer ，就可以非常方便的实现自己的线程同步器。Java 中的 **锁Lock**  就是基于AQS来实现的。
+AbstractQueuedSynchronizer（AQS） 是 Java 中非常重要的一个框架类，它实现了最核心的多线程同步语义，只要继承 AbstractQueuedSynchronizer ，就可以非常方便的实现自己的线程同步器。Java 中的 **锁Lock**  就是基于AQS来实现的。
 
-​        下面展示了AQS类提供的一些方法：
+下面展示了AQS类提供的一些方法：
 
 <img src="./images/AQS/1.png" alt="1" style="zoom:50%;" />
 
-​       在类结构上，AQS 继承了 ***AbstractOwnableSynchronizer***，这个AbstractOwnableSynchronizer 仅有的两个方法是提供当前独占模式的线程设置：
+在类结构上，AQS 继承了 ***AbstractOwnableSynchronizer***，这个AbstractOwnableSynchronizer 仅有的两个方法是提供当前独占模式的线程设置：
 
 ```java
 
@@ -43,17 +43,17 @@
     }
 ```
 
-​        ***exclusiveOwnerThread*** 代表的是当程获得同步的线程。因为是独占模式，在 exclusiveOwnerThread 持有同步的过程中其他线程的任何同步获取请求将得不到满足。
+***exclusiveOwnerThread*** 代表的是当程获得同步的线程。因为是独占模式，在 exclusiveOwnerThread 持有同步的过程中其他线程的任何同步获取请求将得不到满足。
 
-​        至此，需要说明的是，AQS 不仅支持独占模式下的同步实现，还支持共享模式下的同步实现。在 Java 的锁的实现上，就有**共享锁**和**独占锁**的区别，而这些实现都是基于AQS对于共享同步和独占同步的支持。从上面展示的 AQS 提供的方法中，可以发现 AQS 的API 大致分为三类：
+至此，需要说明的是，AQS 不仅支持独占模式下的同步实现，还支持共享模式下的同步实现。在 Java 的锁的实现上，就有**共享锁**和**独占锁**的区别，而这些实现都是基于AQS对于共享同步和独占同步的支持。从上面展示的 AQS 提供的方法中，可以发现 AQS 的API 大致分为三类：
 
 * 类似 *acquire ( int )* 的一类，是最基本的一类，不可被中断
 * 类似 *acquireInterruptibly( int )* 的一类，可以被中断
 * 类似 *tryAcquireNanos( int, long )* 的一类，不仅可以被中断，还可以设置阻塞时间
 
-​        上面三种类型的API分为**独占**和**共享**两套，可以根据需要来使用合适的 API 来做线程同步。
+上面三种类型的API分为**独占**和**共享**两套，可以根据需要来使用合适的 API 来做线程同步。
 
-​        下面是一个继承 AQS 来实现自己的同步器的示例：
+下面是一个继承 AQS 来实现自己的同步器的示例：
 
 ```java
 class Mutex implements Lock, java.io.Serializable {
@@ -115,9 +115,9 @@ class Mutex implements Lock, java.io.Serializable {
 }
 ```
 
-​       这个 **Mutex** 实现的功能：使用 0 来代表可以获得同步变量，使用 1 来代表需要等待同步变量被释放再获取。这是一个简单的独占锁实现，任何时刻只会有一个线程获得锁，其他请求获取锁的线程都会阻塞等待，直到锁被释放，等待的线程将在此竞争来获得锁。
+这个 **Mutex** 实现的功能：使用 0 来代表可以获得同步变量，使用 1 来代表需要等待同步变量被释放再获取。这是一个简单的独占锁实现，任何时刻只会有一个线程获得锁，其他请求获取锁的线程都会阻塞等待，直到锁被释放，等待的线程将在此竞争来获得锁。
 
-​        Mutex 给了很好的范例：要实现自己的同步器，就要继承 AQS 实现其中**三个**抽象方法，然后使用该实现类来做 lock 和 unlock 的操作。可以发现，AQS 框架已经铺平了道路，只需要做一点点改变就可以实现高效安全的线程同步器。下文将分析 AQS 是如何提供如此强大的同步能力的。
+Mutex 给了很好的范例：要实现自己的同步器，就要继承 AQS 实现其中**三个**抽象方法，然后使用该实现类来做 lock 和 unlock 的操作。可以发现，AQS 框架已经铺平了道路，只需要做一点点改变就可以实现高效安全的线程同步器。下文将分析 AQS 是如何提供如此强大的同步能力的。
 
 
 
@@ -125,9 +125,9 @@ class Mutex implements Lock, java.io.Serializable {
 
 ### 2.1 独占模式
 
-​        AQS 使用了 **volatile**  修饰一个 int 来作为同步变量，任何想要获得锁的线程都需要来竞争该变量。获得锁的线程可以继续业务流程的执行，而没有获得锁的线程会被放到一个 **FIFO** 的队列中去，等待再次竞争同步变量来获得锁。
+AQS 使用了 **volatile**  修饰一个 int 来作为同步变量，任何想要获得锁的线程都需要来竞争该变量。获得锁的线程可以继续业务流程的执行，而没有获得锁的线程会被放到一个 **FIFO** 的队列中去，等待再次竞争同步变量来获得锁。
 
-​        AQS 为每个没有获得锁的线程封装成一个 **Node** 对象再放到队列中去，下面分析一下 Node 的结构：
+AQS 为每个没有获得锁的线程封装成一个 **Node** 对象再放到队列中去，下面分析一下 Node 的结构：
 
 ```java
 static final class Node {
@@ -150,9 +150,9 @@ static final class Node {
 }
 ```
 
-​        上面展示的是 **Node** 的四个状态。需要注意的是，只有一个状态是大于 0 的，也就是 **CANCELED**，也就是“**被取消**”状态。这个状态下的线程，不再需要为此线程协调同步变量的竞争了。其他几个的意义如代码上的注释。
+上面展示的是 **Node** 的四个状态。需要注意的是，只有一个状态是大于 0 的，也就是 **CANCELED**，也就是“**被取消**”状态。这个状态下的线程，不再需要为此线程协调同步变量的竞争了。其他几个的意义如代码上的注释。
 
-​        AQS 使用下面的两个变量来标识是共享还是独享模式：
+AQS 使用下面的两个变量来标识是共享还是独享模式：
 
 ```java
     static final class Node {
@@ -181,13 +181,13 @@ static final class Node {
         Node nextWaiter;
 ```
 
-​        AQS 使用 **双向链表** 来管理请求同步的 Node，保存了链表的 head 和 tail，新的 Node 将会被插入到链表的**尾端**，而链表的 head 总是代表着获得锁的线程，链表头的线程释放了锁之后，会通知后面的线程来竞争共享变量。
+AQS 使用 **双向链表** 来管理请求同步的 Node，保存了链表的 head 和 tail，新的 Node 将会被插入到链表的**尾端**，而链表的 head 总是代表着获得锁的线程，链表头的线程释放了锁之后，会通知后面的线程来竞争共享变量。
 
-​        下面来分析 AQS 是如何实现独占模式下的 ***acquired*** 和 ***release*** 的。
+下面来分析 AQS 是如何实现独占模式下的 ***acquired*** 和 ***release*** 的。
 
 #### 2.1.1 acquired
 
-​        使用 acquired( int ) 方法可以竞争同步变量，下面是调用链路：
+使用 acquired( int ) 方法可以竞争同步变量，下面是调用链路：
 
 ```java
     public final void acquire(int arg) {

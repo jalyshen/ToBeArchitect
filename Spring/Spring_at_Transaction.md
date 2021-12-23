@@ -626,5 +626,5 @@ public class Application10 {
 
 ### 2.11 数据库不支持事物
 
-如果数据库引擎不支持事务的话，随便怎么加@Transactional，都不会生效。
+**如果数据库引擎不支持事务的话**，随便怎么加@Transactional，都不会生效。
 
