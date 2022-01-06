@@ -21,7 +21,7 @@ Kafka 中的**位移**是一个极为重要的概念，因为数据的一致性�
 
 ### 消费位移
 
-消费位移，记录的是 Consumer 要消费的下一条消息的位移。<font color='red'>**切记，是下一条消息的位移**</font>。而不是目前最新消费消息的位移。
+消费位移，记录的是 Consumer 要消费的下一条消息的位移。<font color='red'>**切记，是下一条消息的位移**</font>，不是最新消费消息的位移。
 
 假设一个分区中有10条消息，位移分别是 0 到 9。某个 Consumer 应用已消费了 5 条消息，这就说明该 Consumer 消费位移为 0 到 4 的 5 条数据，此时 Consumer 的位移是 5，指向了吓一跳的位移。
 
@@ -33,7 +33,7 @@ Kafka 中的**位移**是一个极为重要的概念，因为数据的一致性�
 
 ## 位移的提交
 
-Consumer 需要上报自己的消费位移数据。这个汇报的过程称为位移提交。因为 Consumer 能够同时消费多个分区的数据，所以消费位移的提交实际上是在分区粒度上进行的，即 Consumer 需要为分配给它的每个分区提交个字的消费位移数据。
+每个Consumer 需要上报自己针对每个patition的消费位移数据。这个汇报的过程称为位移提交。因为 Consumer 能够同时消费多个分区的数据，所以**消费位移的提交实际上是在分区粒度**上进行的，即 Consumer 需要为分配给它的每个分区提交自己的消费位移数据。
 
 鉴于消费位移提交甚至是位移管理对 Consumer 端的巨大影响，Kafka Consumer API 提供了多种提交位移的方案。每一种都有各自的用途。
 
@@ -46,7 +46,7 @@ void commitAsync(OffsetCommitCallback callback);
 void commitAsync(Map<TopicPartition, OffsetAndMetadata> offsets, OffsetCommitCallback callback);
 ```
 
-先粗略的总结一下：消费位移提交分为自动提交和手动提交。而手动提交又分为同步提交和异步提交（从上面的 API 也看得出来，分成了同步和异步）。
+先粗略的总结一下：消费位移提交分为**自动提交**和**手动提交**。而手动提交又分为同步提交和异步提交（从上面的 API 也看得出来，分成了同步和异步）。
 
 ### 自动提交
 
@@ -99,7 +99,7 @@ while (true) {
 
 Kafka 对于业务层面的失败导致消费未被消费成功，是无法处理的。因为业务层的逻辑太多变化，而 Kafka 并不会去处理业务次相关的东西。只能消费者自己解决，做好日志记录等。
 
-目前为止，手动提交消费位移解决了消息丢失问题，但是不能解决重复消费问题。
+目前为止，**手动提交消费位移解决了消息丢失问题，但是不能解决重复消费问题**。
 
 ### 同步提交
 
@@ -109,7 +109,7 @@ Kafka 对于业务层面的失败导致消费未被消费成功，是无法处�
 
 ### 异步提交
 
-异步提交会立即返回，不会阻塞，因此不影响 Consumer 应用的 TPS。由于它是异步的，Kafka 提供了回调函数，用于实现提交之后（成功或者失败）的逻辑。比如记录日志，异常处理等等。下面代码展示了调用 *commitAsync()* 的方法：
+异步提交会立即返回，不会阻塞，因此不影响 Consumer 应用的 TPS。由于它是异步的，**Kafka 提供了回调函数**，用于实现提交之后（成功或者失败）的逻辑。比如记录日志，异常处理等等。下面代码展示了调用 *commitAsync()* 的方法：
 
 ```java
 consumer.commitAsync((offsets, exception) -> {
@@ -131,7 +131,8 @@ try {
                   .ofMinutes(KafkaConfig.pollTimeoutOfMinutes));
         if (!consumerRecords.isEmpty()) {
              for (ConsumerRecord<String, String> record : consumerRecords) {
-                KafkaMessage kafkaMessage = JSON.parseObject(record.value(), KafkaMessage.class);
+                KafkaMessage kafkaMessage = 
+                    JSON.parseObject(record.value(), KafkaMessage.class);
                 boolean handleResult = handle(kafkaMessage);             
              }
              //先来一次异步提交位移               
@@ -164,7 +165,7 @@ try {
 
   可以通过 ***commitSync<Map<TopicPartition, OffsetAndMetadata>)***  和 ***commitAsync<Map<TopicPartition, OffsetAndMetadata>)***  对位移进行精确的控制。
 
-* poll 和 commit 方法对于普通的开发而言是一个黑盒，无法精确的掌控消费的具体位置，即不知道挑的是哪个partition的offset，也不知道offset的具体值。如何破？
+* **poll 和 commit 方法对于普通的开发而言是一个黑盒**，无法精确的掌控消费的具体位置，即不知道挑的是哪个partition的offset，也不知道offset的具体值。如何破？
 
   可以通过 ***record.topic()*** 获取 topic 信息， ***record.partition()*** 获取分区信息， ***record.offset() + 1*** 获取位移信息（*消费位移是指向下一条消费的位置，所以+1*）
 
@@ -172,7 +173,7 @@ try {
 
   通过使用 ***consumer.seek( offset_value)***  方法指定从某个位移开始消费，而这个offset_value 就存在自己的数据库中
 
-综上几个优化点，可以给出一个比较靠谱的解决方案：联合异步提交和同步提交，对处理过程中所有的异常都进行处理。细粒度的控制消费位移的提交，并且把消费位移信息记录到自己的数据库中，重启consumer应用时，从数据库读取offset的值。
+综上几个优化点，可以给出一个比较靠谱的解决方案：**联合异步提交和同步提交，对处理过程中所有的异常都进行处理。细粒度的控制消费位移的提交，并且把消费位移信息记录到自己的数据库中，重启consumer应用时，从数据库读取offset的值。**
 
 这个逻辑已经抽象成了下面的抽象类，可以直接集成使用：
 
@@ -194,15 +195,19 @@ public abstract class PrefectCosumer {
          });
         try {
             while (true) {
-                ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofMinutes(KafkaConfig.pollTimeoutOfMinutes));
+                ConsumerRecords<String, String> consumerRecords = 
+                    consumer.poll(Duration.ofMinutes(KafkaConfig.pollTimeoutOfMinutes));
                 if (!consumerRecords.isEmpty()) {
                     for (ConsumerRecord<String, String> record : consumerRecords) {
 
-                        KafkaMessage kafkaMessage = JSON.parseObject(record.value(), KafkaMessage.class);
+                        KafkaMessage kafkaMessage = 
+                            JSON.parseObject(record.value(), KafkaMessage.class);
                         boolean handleResult = handle(kafkaMessage);
                         if (handleResult) {
-                            //注意：提交的是下一条消息的位移。所以OffsetAndMetadata 对象时，必须使用当前消息位移加 1。
-                            offsets.put(new TopicPartition(record.topic(), record.partition()),
+                            // 注意：提交的是下一条消息的位移。所以OffsetAndMetadata 对象时，
+                            // 必须使用当前消息位移加 1。
+                            offsets.put(new TopicPartition(record.topic(), 
+                                                           record.partition()),
                                     new OffsetAndMetadata(record.offset() + 1));
 
                             // 细粒度控制提交 每10条提交一次offset
@@ -214,22 +219,24 @@ public abstract class PrefectCosumer {
                                     }
                                     // 将消费位移再记录一份到数据库中
                                     offsets.forEach((k, v) -> {
-                                        String s = "insert into kafka_offset(`topic`,`group_id`,`partition_id`,`offset`) values" +
-                                                " ('" + k.topic() + "','" + getGroupId() + "'," + k.partition() + "," + v.offset() + ")" +
-                                                " on duplicate key update offset=values(offset);";
+                                        String s = "insert into kafka_offset( +
+                                            "`topic`,`group_id`,`partition_id`,`offset`) " +
+                                            values" +
+                                                " ('" + k.topic() + "','" + 
+                                            getGroupId() + "'," + 
+                                            k.partition() + "," + v.offset() + ")" +
+                                                " on duplicate key update " +
+                                            " offset=values(offset);";
                                         JdbcUtils.insertTable(s);
                                     });
-
-
                                 });
                             }
                             count++;
                         } else {         
-                            System.out.println("消费消息失败 kafkaMessage={}" + getTopics() + getGroupId() + kafkaMessage.toString());                         
+                            System.out.println("消费消息失败 kafkaMessage={}" + getTopics() +
+                                               getGroupId() + kafkaMessage.toString());                         
                         }
                     }
-
-
                 }
             }
         } catch (Exception e) {
@@ -241,8 +248,6 @@ public abstract class PrefectCosumer {
             } finally {
                 consumer.close();
             }
-
-
         }
     }
     
@@ -366,7 +371,7 @@ consumer.partitionsFor(getTopics().get(0)).stream().map(info ->
 
 ## 提交的位移都去哪儿了？
 
-通过上面的介绍，已经搞懂了位移提交的方方面面。那么提交的位移保存在哪儿了呢？Kafak 把位移保存在了一个叫做 ***_consumer_offsets*** 的内部主题中，叫做“位移主题”。
+通过上面的介绍，已经搞懂了位移提交的方方面面。那么提交的位移保存在哪儿了呢？Kafak 把位移保存在了一个叫做 ***_consumer_offsets*** 的内部主题中，叫做“位移主题”。	
 
 注意：老版本的 Kafka 其实就是把位移保存在 ZooKeeper 中的，但是 ZK 并不适合这种高频写的场景，所以新版已经改进了这个方案，直接保存到 Kafka内部。毕竟 Kafka 本身更适合高频写入的场景，并且 Kafka 也可以保证高可用性和高持久性。
 

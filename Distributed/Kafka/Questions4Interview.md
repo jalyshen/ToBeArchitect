@@ -52,14 +52,14 @@ Kafka副本，当前氛围领导者和追随者副本。**只有Leader副本才�
 
 这道题涉及到2个地方：消费者端和Broker端。
 
-* Broker端参数：message.max.bytes、max.message.bytes(主题级别) 以及 replica.fetch.max.bytes
-* Consumer端：fetch.message.max.bytes
+* **Broker端参数**：message.max.bytes、max.message.bytes(主题级别) 以及 replica.fetch.max.bytes
+* **Consumer端**：fetch.message.max.bytes
 
-Broker端的最后一个参数比较容易遗漏。我们必须要调整Follower副本能够接收的最大消息的大小，否则，副本同步就会说失败。
+Broker端的最后一个参数比较容易遗漏。***必须要调整 Follower 副本能够接收的最大消息的大小，否则，副本同步就会说失败。***
 
 ### 2.2 监控Kafka的框架有哪些？
 
-下 面这些就是 Kafka 发展历程上比较有名气的监控系统。
+下面这些就是 Kafka 发展历程上比较有名气的监控系统。
 
 * **Kafka Manager**：应该是最有名的专属Kafka监控框架了，是独立的监控系统
 * **Kafka Monitor**：LinkedIn开源的免费框架，支持对集群进行系统监测，并实时监控测试结果
@@ -72,17 +72,19 @@ Broker端的最后一个参数比较容易遗漏。我们必须要调整Follower
 
 它是一类非常通用的面试题目。一旦你应对不当，面试方向很有可能被引到 JVM 和 GC 上去，那样的话，你被问住的几率就会增大。因此，建议简单地介绍一下 Heap Size 的设置方法，并把重点放在 Kafka Broker 堆大小设置的最佳实践上。
 
-这是一种回复：**任何 Java 进程 JVM 堆大小的设置都需要仔细地进行考量和测试。一个常见的做法是，以默认的初始 JVM 堆大小运行程序，当系统达到稳定状态后，手动触发一次 Full GC，然后通过 JVM 工具查看 GC 后的存活对象大小。之后，将堆大小设置成存活对象总大小的 1.5~2 倍。对于 Kafka 而言，这个方法也是适用的。不过，业界有个最佳实践，那就是将 Broker 的 Heap Size 固定为 6GB。经过很多公司的验证，这个大 小是足够且良好的。**
+这是一种回复：**任何 Java 进程 JVM 堆大小的设置都需要仔细地进行考量和测试。一个常见的做法是，以默认的初始 JVM 堆大小运行程序，当系统达到稳定状态后，手动触发一次 Full GC，然后通过 JVM 工具查看 GC 后的存活对象大小。之后，将堆大小设置成存活对象总大小的 1.5~2 倍。对于 Kafka 而言，这个方法也是适用的。**
+
+**不过，业界有个最佳实践，那就是将 Broker 的 Heap Size 固定为 6GB。经过很多公司的验证，这个大 小是足够且良好的。**
 
 ### 2.4 如何估算Kafka集群的机器数量？
 
 这道题目考查的是**机器数量和所用资源之间的关联关系**。所谓***资源，也就是 CPU、内存、磁盘和带宽***。
 
-通常来说，CPU和内存资源的充足是比较容易保证的，因此，需要从磁盘空间和带宽占用两个维度去评估机器数量。
+通常来说，CPU和内存资源的充足是比较容易保证的，***因此，需要从磁盘空间和带宽占用两个维度去评估机器数量***。
 
 在预估磁盘的占用时，**一定不要忘记计算副本同步的开销**。如果一条消息占用1KB的磁盘空间，那么，在3个副本的中，就需要3K的总空间来保存这条消息。显式地，将这些考虑因素都罗列出来，能够彰显对问题思考的全面性。
 
-对于评估带宽来说，常见的带宽有 *1Gbps* 和 *10Gbps*，但要切记，**这两个数字仅仅是最大值**。因此，最好要明确给定的带宽是多少。然后，明确阐述**当带宽占用接近总带宽的90%时**，丢包就会发生。
+对于评估带宽来说，常见的带宽有 *1Gbps* 和 *10Gbps*，但要切记，**这两个数字仅仅是最大值**。因此，最好要明确给定的带宽是多少。然后，明确阐述**当带宽占用接近总带宽的90%时**，<font color='red'>丢包就会发生</font>。
 
 ### 2.5 Leader总是-1，怎么破？
 
@@ -97,7 +99,7 @@ Broker端的最后一个参数比较容易遗漏。我们必须要调整Follower
 * **LEO**：Log End Offset。**日志末端位移值**或**末端偏移量**。表示日志下一条待插入消息的位移值。举个例子：如果日志有10条信息，位移值从0开始，那么，第10条消息的位置值就是9，此时，LEO = 10
 * **LSO**：Log Stable Offset。这是Kafka事务的概念。如果没有使用到事务，那么这个值不存在(其实也不是不存在，只是设置成一个无意义的值)。**该值控制了事务型消费者能够看到的消息范围**。它经常与 Log **Start** Offset，即日志起始位移相混淆，因为有些人将后者也缩写成LSO。在Kafka中，LSO专指 Log Stable Offset
 * **AR**：Assigned Replicas。AR，是主题被创建后，分区创建时被分配的副本集合，副本个数由副本因子决定
-* **ISR**：In-Sync Replicas。Kafka中特别重要的概念，**指代的是AR中那些与Leader保持同步的副本集合**。在AR中的副本可能不在ISR中，但**Leader副本天然就包含在ISR中**。
+* **ISR**：In-Sync Replicas。<font color='red'>Kafka中特别重要的概念</font>，**指代的是AR中那些与Leader保持同步的副本集合**。在AR中的副本可能不在ISR中，但**Leader副本天然就包含在ISR中**。
   * 关于ISR，还有一个常见的面试题是：如何判断副本是否应该属于ISR。目前的判断依据是：Follower副本的LEO落后 Leader LEO的时间，是否超过了Broker端参数replica.lag.time.max.ms值。如果超过了，副本就从ISR中移除。
 * **HW**：高水位值(High watermark)。**这是控制消费者可读取消息范围的重要字段**。一个普通消费者只能“看到”Leader 副本上介于 Log Start Offset 和 HW(不含)之间的 所有消息。水位以上的消息是对消费者不可见的。
   * 关于HW，问法有很多，能想到的 最高级的问法，就是让你完整地梳理下 Follower 副本拉取 Leader 副本、执行同步机制 的详细步骤。这就是最后一道题的题目，一会儿会给出答案和解析。
@@ -112,7 +114,7 @@ Kafka的GroupCoordinator组件提供对该主题的完整管理功能，包括�
 
 ### 3.3 分区Leader选举策略有几种？
 
-分区的 Leader 副本选举对用户是完全透明的，它是由 Controller 独立完成的。需要回答的是，在哪些场景下，需要执行分区 Leader 选举。每一种场景对应于一种选举策略。当前，Kafka 有 4 种分区 Leader 选举策略。
+分区的 Leader 副本选举对用户是完全透明的，它是由 Controller 独立完成的。**需要回答的是，在哪些场景下，需要执行分区 Leader 选举**。每一种场景对应于一种选举策略。当前，Kafka 有 4 种分区 Leader 选举策略。
 
 * **Offline Partition Leader**：每当有分区上线时，就需要执行Leader选举。所谓的分区上线，可能是创建了新分区，也可能是之前的下线分区重新上线。**这是最常见的分区Leader选举场景**
 
@@ -137,7 +139,7 @@ Zero Copy是特别容易被问到的高阶题目。在Kafka中，体现Zero Copy
 
 ### 4.1 Kafka 为什么不支持读写分离？
 
-这道题考察的目标是对Leader/Follower模型的思考。
+这道题考察的目标是对 Leader/Follower 模型的思考。
 
 Leader/Follower 模型**并没有**规定 Follower 副本不可以对外提供读服务。很多框架都是允许这么做的，只是Kafka最初为了避免不一致性的问题，而采用了让 Leader 统一提供服务的方式。
 
@@ -146,25 +148,27 @@ Leader/Follower 模型**并没有**规定 Follower 副本不可以对外提供�
 下面再给出 2.4 版本之前不支持读写分离的理由：
 
 * 场景不适用：读写分离适用于那种读负载很大，而写操作相对不频繁的场景。显然 Kafka 不属于这个场景
-* 同步机制：Kafka采用 **PULL** 方式实现 Follower 的同步。因此，**Follower与Leader存在不一致性窗口**。如果允许读Follower副本，就势必要处理消息滞后（Lagging）的问题 - *【貌似读写分离都存在这样的问题】*
+* **同步机制**：Kafka采用 **PULL** 方式实现 Follower 的同步。因此，**Follower与Leader存在不一致性窗口**。如果允许读Follower副本，就势必要处理消息滞后（Lagging）的问题 - *【貌似读写分离都存在这样的问题】*
 
 ### 4.2 如何调优Kafka？
 
-任何调优的问题，第一步，都**要明确优化目标，并且定量给出目标！** 这点特别重要。对于kafka而言，***常见的优化目标是：吞吐量、延时、持久化和可用性***。这些目标的优化思路都是不同的，甚至是相反的。
+任何调优的问题，第一步，都**要明确优化目标，并且定量给出目标！** 这点特别重要。
 
-确定了目标后，还要明确优化的维度。有些调优属于通用的优化思路，比如对操作系统、JVM等的优化；有些则是针对性的，比如要优化Kafka的TPS等。从3个方向去考虑：
+对于kafka而言，***常见的优化目标是：吞吐量、延时、持久化和可用性***。这些目标的优化思路都是不同的，甚至相反。
+
+确定了目标后，还要明确**优化的维度**。有些调优属于通用的优化思路，比如对操作系统、JVM等的优化；有些则是针对性的，比如要优化Kafka的TPS等。从3个方向去考虑：
 
 * **Producer端**：增加 batch.size、linger.ms， 启用压缩，关闭重试等
-* **Broker端**：增加 num.replica.fetchers，提升 Follower 同步TPS，避免  Broker Full GC等
+* **Broker端**：增加 num.replica.fetchers，提升 Follower 同步TPS，避免 Broker Full GC等
 * **Consumer端**：增加 fetch.min.bytes 等
 
 ### 4.3 Contoller发生网络分区(Network Partitioning)时，Kafka会怎么样？
 
-这道题目能够诱发对分布式系统设计、CAP 理论、一致性等多方面的思考。不过，针对故障定位和分析的这类问题。建议你首先言明“实用至上”的观点，即：不论怎么进行理论分析，永远都要以实际结果为准。一旦发生 Controller 网络分区，那么，**第一要务就是 查看集群是否出现“脑裂”**，即同时出现两个甚至是多个 Controller 组件。这可以根据 Broker 端监控指标 ActiveControllerCount 来判断。
+这道题目能够诱发对分布式系统设计、CAP 理论、一致性等多方面的思考。不过，针对故障定位和分析的这类问题。建议你首先言明“实用至上”的观点，即：不论怎么进行理论分析，永远都要以实际结果为准。一旦发生 Controller 网络分区，那么，**第一要务就是 查看集群是否出现“脑裂”**，即同时出现两个甚至是多个 Controller 组件。这可以根据 Broker 端监控指标 ***ActiveControllerCount*** 来判断。
 
-现在分析下，一旦出现这种情况，Kafka 会怎么样。
+现在分析下，一旦出现这种情况，Kafka 会怎么样？
 
-由于Controller会给 Broker 发送3类请求：LeaderAndIsrRequest、StopReplicaRequest和 UpdateMetadataRequest，因此，一旦出现网络分区，这些请求将不能顺利到达Broker端。这将影响主题的创建、修改、删除操作的信息同步，表现为集群方佛僵住了一样，无法感知到后面的所有操作。因此，网络分区通常都是非常严重的问题。
+由于Controller会给 Broker 发送3类请求：LeaderAndIsrRequest、StopReplicaRequest和 UpdateMetadataRequest，因此，一旦出现网络分区，这些请求将不能顺利到达Broker端。这将影响主题的创建、修改、删除操作的信息同步，表现为集群仿佛僵住了一样，无法感知到后面的所有操作。因此，网络分区通常都是非常严重的问题。
 
 ### 4.4 Java Consumer为什么采用单线程来获取消息？
 
@@ -174,7 +178,9 @@ Leader/Follower 模型**并没有**规定 Follower 副本不可以对外提供�
 
 ### 4.5 简述Follower副本消息同步的完整流程
 
-首先，Follower发送FETCH请求给Leader；接着，Leader会读取底层日志文件中的消息数据，再更新它内存中的 Follower 副本的LEO值，更新为 FETCH 请求中的 fetchOffset 值。最后，尝试更新分区高水位值。Follower 接收到FETCH 相应之后，会把消息写入底层日志，接着更新 LEO 和 HW 值。
+首先，Follower发送 FETCH 请求给Leader；
 
-Leader 和 Follower 的 HW 值更新时机是不同的，Follower 的 HW 更新永远落后于 Leader 的 HW。这种时间上的错配是造成各种不一致的原因。
+接着，Leader会读取底层日志文件中的消息数据，再更新它内存中的 Follower 副本的LEO值，更新为 FETCH 请求中的 fetchOffset 值。最后，尝试更新分区高水位值。Follower 接收到 FETCH 响应之后，会把消息写入底层日志，接着更新 LEO 和 HW 值。
+
+Leader 和 Follower 的 HW 值更新时机是不同的，Follower 的 HW 更新**永远落后于** Leader 的 HW。这种时间上的错配是造成各种不一致的原因。
 

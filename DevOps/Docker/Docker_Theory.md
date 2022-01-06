@@ -12,13 +12,13 @@ https://www.cnblogs.com/sparkdev/p/9092082.html
 
 Docker镜像是一个**只读**的Docker**容器模版**，含有启动Docker容器所需要的文件系统结构及其内容，因此是启动一个Docker容器的基础。
 
-Docker镜像的文件内容以及一些运行Docker容器的配置文件组成了Docker容器的静态文件系统运行环境：rootfs。可以这么理解：Docker镜像是Docker容器的静态视角，Docker容器是Docker镜像的运行状态。
+Docker镜像的文件内容以及一些运行Docker容器的配置文件组成了Docker容器的静态文件系统运行环境：rootfs。可以这么理解：**Docker镜像是Docker容器的静态视角，Docker容器是Docker镜像的运行状态**。
 
 通过下图来理解Docker Daemon， Docker镜像以及Docker容器三者的关系：
 
 ![](./images/Docker_image_container_relation.jpg)
 
-从上图可以看到，当由Ubuntu14.04镜像启动容器时，Ubuntu14.04镜像的镜像层内容将作为容器的rootfs。而Ubuntu14.04镜像的json文件，会由Docker daemon解析，并提取出其中的内容执行入口CMD信息，以及容器进程的环境变量ENV信息，最终初始化容器进程。当然，容器京城的执行入口源于镜像提供的rootfs。
+从上图可以看到，当由Ubuntu14.04镜像启动容器时，Ubuntu14.04镜像的镜像层内容将作为容器的rootfs。而Ubuntu14.04镜像的json文件，会由Docker daemon解析，并提取出其中的内容执行入口CMD信息，以及容器进程的环境变量ENV信息，最终初始化容器进程。当然，容器进程的执行入口源于镜像提供的rootfs。
 
 ### rootfs
 

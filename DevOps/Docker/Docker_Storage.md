@@ -16,7 +16,7 @@ https://www.cnblogs.com/sparkdev/p/9121188.html
 
 ## Docker镜像元数据管理
 
-Docker镜像在设计上将镜像元数据和镜像文件的存储完全隔离开了。Docker在管理镜像层元数据时采用的是从上而下**repository、image**和**layer**三个层次。由于Docker以分层的形式存储镜像，所有repository和image这两类元数据并没有物理上的镜像文件与之对应，而layer这种元数据则存在物理上的镜像层文件与之对应。接下来就介绍这些元数据的管理与存储。
+**Docker镜像在设计上将镜像元数据和镜像文件的存储完全隔离开了**。Docker在管理镜像层元数据时采用的是从上而下**repository、image**和**layer**三个层次。由于Docker以分层的形式存储镜像，所有repository和image这两类元数据并没有物理上的镜像文件与之对应，而layer这种元数据则存在物理上的镜像层文件与之对应。接下来就介绍这些元数据的管理与存储。
 
 ### Repository元数据
 

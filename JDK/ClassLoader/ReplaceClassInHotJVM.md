@@ -4,11 +4,11 @@
 
 
 
-​        常常会遇到这样的问题：测试环境、预发布环境，应用运行得非常好，但是代码一到线上就会出现莫名其妙的问题。往往这个时候，不能中断对外提供的服务，又要线上调试问题，如何是好呢？
+常常会遇到这样的问题：测试环境、预发布环境，应用运行得非常好，但是代码一到线上就会出现莫名其妙的问题。往往这个时候，不能中断对外提供的服务，又要线上调试问题，如何是好呢？
 
-​        其实这个问题的本质就是**要动态改变内存中已经存在的对象的行为**。
+其实这个问题的本质就是**要动态改变内存中已经存在的对象的行为**。
 
-​        JVM 中操作的对象是 class 文件，不是源码。所以进一步分析，就是要改变 class 文件，然后让 JVM 重新加载 class 文件，就能达到目的了。
+JVM 中操作的对象是 class 文件，不是源码。所以进一步分析，就是要改变 class 文件，然后让 JVM 重新加载 class 文件，就能达到目的了。
 
 ## 1. 实战脑图
 
@@ -16,9 +16,9 @@
 
 ## 2. Github 文档
 
-​        Arthas 是 Alibaba 开源的 Java 诊断工具：
+Arthas 是 Alibaba 开源的 Java 诊断工具：
 
-​        https://github.com/alibaba/arthas/blob/master/README_CN.md
+https://github.com/alibaba/arthas/blob/master/README_CN.md
 
 ## 3. Arthas 实战
 
@@ -40,7 +40,7 @@
 
 ### 3.2 Start Arthas
 
-​        新开一个终端，启动 arthas：
+新开一个终端，启动 arthas：
 
 ```shell
 java -jar arthas-boot.jar
@@ -48,11 +48,11 @@ java -jar arthas-boot.jar
 
 ![4](./images/ReplaceClassInHotJVM/4.png)
 
-​        输入命令行，这里选择 [2]，因为 [2] 是刚刚启动的进程：
+输入命令行，这里选择 [2]，因为 [2] 是刚刚启动的进程：
 
 ![5](./images/ReplaceClassInHotJVM/5.png)
 
-​        选择指定进程。至此，准备工作完成，第二个窗口也进入到 arthas 窗口模式
+选择指定进程。至此，准备工作完成，第二个窗口也进入到 arthas 窗口模式
 
 ## 4. 热更新代码
 
@@ -110,4 +110,4 @@ java -jar arthas-boot.jar
 
 ## 5. 小结
 
-​        Java是静态语言，运行时不允许改变数据结构。然而，Java 5引入Instrument，Java 6引入Attach API之后，事情开始变得不一样了。
+Java是静态语言，运行时不允许改变数据结构。然而，Java 5引入Instrument，Java 6引入Attach API之后，事情开始变得不一样了。
