@@ -4,7 +4,7 @@
 
 ### 1. 什么是MySQL的事务？事务的四大特性？事务带来了什么问题？
 
-MySQL 中，事务的隔离级别分为四大等级：**读未提交**（READ UNCOMMITTED）、**读提交**（READ COMMITTED）、**可重复度**（REPEATABLE READ）、**串行化**（SERIALIZABLE）。
+MySQL 中，事务的隔离级别分为四大等级：**读未提交**（READ UNCOMMITTED）、**读提交**（READ COMMITTED）、**可重复读**（REPEATABLE READ）、**串行化**（SERIALIZABLE）。
 
 在 MySQL 中，事务的四大特性主要包含：**原子性**（Atomicity）、**一致性**（Consistent）、**隔离性**（Isolation）、**持久性**（Durable），简称ACID。
 

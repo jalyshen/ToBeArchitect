@@ -4,21 +4,21 @@
 
 
 
-## 1 为什么要使用 Elastic Search
+### 1 为什么要使用 Elastic Search
 
 
 
-## 2 Elastic Search 是如何实现 Master 选举的
+### 2 Elastic Search 是如何实现 Master 选举的
 
 
 
-### 3 Elastic Search中的节点（如共20个），其中的10个选了一个master，另10个选了另一个master，如何办？
+#### 3 Elastic Search中的节点（如共20个），其中的10个选了一个master，另10个选了另一个master，如何办？
 
 当集群master候选数量不小于3时，可以通过设置**最少投票通过数量**超过所有候选节点一半以上来解决脑裂问题；
 
 当候选数量为2时，只能修改为唯一的一个master候选，其他作为data节点，避免脑裂。
 
-## 4 详细描述 Elastic Search 索引文档的过程
+### 4 详细描述 Elastic Search 索引文档的过程
 
 协调节点默认**使用文档ID参与计算**（也支持通过Routing），以便为路由提供合适的分片。
 
@@ -26,21 +26,21 @@
 
 当分片所在的节点接收到来自协调节点的请求后，会将请求写入到 Memory Buffer，然后定时（默认是每隔1秒）写入到 Filesystem Cache，这个从 Memory Buffer 到 Filesystem Cache 的过程叫做 **refresh**；
 
-当然在某些情况下，存在 Momery Buffer 和 Filesystem Cache 的数据可能会丢失，ES是通过 translog 的机制来保证数据的可靠性的。其实现机制是接收到请求后，同时也写入到  translog 中，当 Filesystem cache 中的数据写入到磁盘中时，才会清除掉，这个过程叫做**flush**；
+当然在某些情况下，存在 Momery Buffer 和 Filesystem Cache 的数据可能会丢失，**ES是通过 translog 的机制来保证数据的可靠性的**。其实现机制是接收到请求后，同时也写入到  translog 中，当 Filesystem cache 中的数据写入到磁盘中时，才会清除掉，这个过程叫做**flush**；
 
-在flush过程中，内存中的缓冲被清除，内容被写入一个新段，段的 fsync 将创建一个新的提交点，并将内容刷新到磁盘，旧的 translog 将被删除并开始一个新的translog
+在flush过程中，内存中的缓冲被清除，内容被写入一个新段（segment），段的 fsync 将创建一个新的提交点，并将内容刷新到磁盘，旧的 translog 将被删除并开始一个新的translog
 
-flush触发的时机时定时触发（默认是30分钟）或者 translog 变得太大（默认是512m）时。
+flush触发的时机是定时触发（默认是30分钟）或者 translog 变得太大（默认是512m）时。
 
-## 5 Elastic Search 更新和删除文档的过程
+### 5 Elastic Search 更新和删除文档的过程
 
-删除和更新都是写操作，但是 Elastic Search 中的文档是不可变的，因此不能被删除过着更改。
+删除和更新都是写操作，但是 Elastic Search 中的文档是不可变的，因此不能被删除或者更改。
 
 磁盘上的每个段都有一个相应的 .del 文件。当删除请求发送后，文档并没有真的被删除，而是在 .del 文件中标记为删除。该文档依然能够匹配查询，但是会在结果中被过滤掉。当段合并时，在 .del 文件中被标记为删除的文档将不会被写入新段。
 
 在新的文档被删除时，Elastic Search 会为该文档指定一个版本号，当执行更新时，旧版本的文档在 .del 文件中被标记为删除，新版本的文档被索引到一个新段。旧版的文档依然能匹配查询，但是会在结果中被过滤掉。
 
-## 6 Elastic Search 搜索的过程
+### 6 Elastic Search 搜索的过程
 
 搜索的执行分成了两个阶段，称之为 Query Then Fetch。
 
@@ -62,7 +62,7 @@ Query Then Fetch 的搜索类型在文档相关性打分的时候参考的损失
 
 Elastic Search 提供的首个近似聚合时 cardinatily 度量。它提供一个字段的基数，即该字段的distinct 或者 unique 值的树木。它是基于 HLL（Hyper Log Log） 算法的。HLL 会先对输入做哈希运算，然后根据哈希运算的结果中的 bits 做概率估算从而得到基数。其特点是：精度可配置，用来控制内存的使用（更精确= 更多内存）；小的数据集精度是非常高的；可通过配置参数，来设置去重需要的固定内存使用量。无论数千亿的唯一值，内存使用量只与配置的精度相关。
 
-## 8 高并发下，Elatic Search如何保证读写一致性
+### 8 高并发下，Elatic Search如何保证读写一致性
 
 可以通过版本号使用了关锁来控制并发，以确保新版本不会被旧版本覆盖，由应用层来处理具体的冲突。
 
@@ -78,7 +78,7 @@ all：必须所有分片（节点）可用才可以写入；
 
 可以设置 replication 为 sync（默认），这使得操作在主分片和副本分片都完成后才会返回；如果设置 replication 为 async 时，也可以通过设置搜索请求参数_preference 为 primary 来查询主分片，确保文档是最新的版本。
 
-## 9 Elastic Search 中的分片是什么？
+### 9 Elastic Search 中的分片是什么？
 
 在大多数环境中，每个节点都在单独的服务器（盒子）或虚拟机上运行的。
 
@@ -96,6 +96,6 @@ all：必须所有分片（节点）可用才可以写入；
 
 
 
-## 11 ES的分析器
+### 11 ES的分析器
 
 在ES中索引数据时，数据由为索引定义的 Analyzer 在内部进行转换。分析器是由一个 Tokenizer 和 0 个 或 多个 TokenFilter 组成的。编译器可以在一个或者多个 CharFilter 之前。分析模块允许在逻辑名称下注册分析器，然后可以在映射定义或者某些API中引用它们。

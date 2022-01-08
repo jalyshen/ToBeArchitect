@@ -17,19 +17,19 @@
 
 ## 2. Hadoop的版本选择
 
-​        目前市面上，主流的是以下几个版本：
+目前市面上，主流的是以下几个版本：
 
 ### 2.1 Apache 社区版
 
-​        Apache社区版完全免费，开源，非商业版本。Apache社区的Hadoop版本分支较多，而且部分Hadoop存在Bug。在选择Hadoop、Hbase、Hive等时，需要考虑兼容性。同时，这个版本的Hadoop的部署对Hadoop开发人员或运维人员的技术要求比较高。
+Apache社区版完全免费，开源，非商业版本。Apache社区的Hadoop版本分支较多，而且部分Hadoop存在Bug。在选择Hadoop、Hbase、Hive等时，需要考虑兼容性。同时，这个版本的Hadoop的部署对Hadoop开发人员或运维人员的技术要求比较高。
 
 ### 2.2 Cloudera版本
 
-​        Cloudera 版本 开源，免费，有商业版和非商业版本，是在Apache社区版本的Hadoop基础上，选择相对稳定版本的Hadoop，进行开发和维护的Hadoop版本。由于此版本的Hadoop在开发过程中对其他的框架的集成进行了大量的兼容性测试，因此使用者不必考虑Hadoop、Hbase、Hive等在使用过程中版本的兼容性问题，大大节省了使用者在调试兼容性方面的时间成本。
+Cloudera 版本 开源，免费，有商业版和非商业版本，是在Apache社区版本的Hadoop基础上，选择相对稳定版本的Hadoop，进行开发和维护的Hadoop版本。由于此版本的Hadoop在开发过程中对其他的框架的集成进行了大量的兼容性测试，因此使用者不必考虑Hadoop、Hbase、Hive等在使用过程中版本的兼容性问题，大大节省了使用者在调试兼容性方面的时间成本。
 
 ### 2.3 Hortonworks版本
 
-​        Hortonworks 版本 的 Hadoop 开源、免费，有商业和非商业版本，其在 Apache 的基础上修改，对相关的组件或功能进行了二次开发，其中商业版本的功能是最强大，最齐全的。
+Hortonworks 版本 的 Hadoop 开源、免费，有商业和非商业版本，其在 Apache 的基础上修改，对相关的组件或功能进行了二次开发，其中商业版本的功能是最强大，最齐全的。
 
 ### 2.4 结论
 
@@ -39,11 +39,11 @@
 
 ### 3.1 Hadoop 1.0
 
-​        Hadoop1.0由分布式存储系统HDFS和分布式计算框架MapReduce组成，其中HDFS由一个NameNode和多个DateNode组成，MapReduce由一个JobTracker和多个TaskTracker组成。在Hadoop1.0中容易导致单点故障，拓展性差，性能低，支持编程模型单一的问题。
+Hadoop1.0由分布式存储系统HDFS和分布式计算框架MapReduce组成，其中HDFS由一个NameNode和多个DateNode组成，MapReduce由一个JobTracker和多个TaskTracker组成。在Hadoop1.0中容易导致单点故障，拓展性差，性能低，支持编程模型单一的问题。
 
 ### 3.2 Hadoop 2.0
 
-​        Hadoop2.0即为克服Hadoop1.0中的不足，提出了以下关键特性：
+Hadoop2.0即为克服Hadoop1.0中的不足，提出了以下关键特性：
 
 * **Yarn**：它是Hadoop2.0引入的一个全新的通用资源管理系统，完全代替了Hadoop1.0中的JobTracker。在MRv1 中的 JobTracker 资源管理和作业跟踪的功能被抽象为 ResourceManager 和 AppMaster 两个组件。Yarn 还支持多种应用程序和框架，提供统一的资源调度和管理功能
 * **NameNode单点故障解决方式**：Hadoop2.2.0 同时解决了 NameNode 单点故障问题和内存受限问题，并提供 NFS，QJM 和 Zookeeper 三种可选的共享存储系统
@@ -108,7 +108,7 @@ yarn.resourcemanager.webapp.address:8088
 
 ![3](./images/interView03/3.png)
 
-​        其中最重要，也是最不好讲的就是 shuffle 阶段，当面试官着重要求你介绍 Shuffle 阶段时，可就不能像上边图上写的那样简单去介绍了。可以这么说：
+其中最重要，也是最不好讲的就是 shuffle 阶段，当面试官着重要求你介绍 Shuffle 阶段时，可就不能像上边图上写的那样简单去介绍了。可以这么说：
 
 1. Map方法之后，Reduce方法之前，这段处理过程叫做 “**Shuffle**”
 2. Map方法之后，数据首先会进入到**分区方法**，把数据标记好分区，然后把数据发送到环形缓冲区；环形缓冲区默认大小是 100m，环形缓冲区达到 80% 时，进行溢写；溢写前对数据进行排序，排序按照 Key 的索引进行字典顺序排序，排序的手段是“**快排**”；溢写产生大量溢写文件，需要对溢写文件进行“**归并排序**”；对溢写的文件也可以进行**Combiner**操作，前提是汇总操作，求平均值不行。最后将文件按照分区存储到磁盘，等待Reduce端拉取
@@ -157,17 +157,17 @@ yarn.resourcemanager.webapp.address:8088
 
 ### 8.7 压缩
 
-​        从压缩可以参考下表：
+从压缩可以参考下表：
 
 ![4](./images/interView03/4.png)
 
-​        提示：一般采用Snappy压缩方式，因为速度快，但缺点是无法切分（可以这么回答：在链式MR中，Reduce端输出使用bzip2压缩，以便后续的map任务对数据进行split）
+提示：一般采用Snappy压缩方式，因为速度快，但缺点是无法切分（可以这么回答：在链式MR中，Reduce端输出使用bzip2压缩，以便后续的map任务对数据进行split）
 
 
 
 ## 9 YARN提交Job的过程
 
-​        提供两个版本：详细版、简略版。一般按照简略版回答即可。
+提供两个版本：详细版、简略版。一般按照简略版回答即可。
 
 * 详细版
 
@@ -197,9 +197,9 @@ yarn.resourcemanager.webapp.address:8088
 
 ## 11 Hadoop的参数优化
 
-​        前面提到了Hadoop基于压缩、小文件、IO的集群优化，现在又要回答参数优化，因为这方面很重要。
+前面提到了Hadoop基于压缩、小文件、IO的集群优化，现在又要回答参数优化，因为这方面很重要。
 
-​        常用的**Hadoop参数调优**有以下几种：
+常用的**Hadoop参数调优**有以下几种：
 
 * 在hdfs-site.xml文件中配置多目录，最好提前配置好，否则更改目录需要重启集群
 
@@ -215,17 +215,17 @@ yarn.resourcemanager.webapp.address:8088
 
 ## 12 Hadoop的基准测试
 
-​        这个需要Case By Case。一般的，需要对HDFS读写性能和MR计算能力测试。测试jar包在hadoop的share文件夹下。
+这个需要Case By Case。一般的，需要对HDFS读写性能和MR计算能力测试。测试jar包在hadoop的share文件夹下。
 
 ## 13 如何处理Hadoop的宕机问题
 
-​        如果MR造成宕机，此时需要控制YARN同时运行的任务数量，和每个任务申请的最大内存。调整参数： yarn.scheduler.maximum-allocation-mb （每个任务可申请的最多物理内存量，默认是8192M-8G）
+如果MR造成宕机，此时需要控制YARN同时运行的任务数量，和每个任务申请的最大内存。调整参数： yarn.scheduler.maximum-allocation-mb （每个任务可申请的最多物理内存量，默认是8192M-8G）
 
-​        如果写入文件过量造成NameNode宕机，那么调高Kafka的存储大小，控制从Kafka到HDFS的写入速度。高峰期的时候用Kafka进行缓存，高峰期过去数据同步会自动跟上。
+如果写入文件过量造成NameNode宕机，那么调高Kafka的存储大小，控制从Kafka到HDFS的写入速度。高峰期的时候用Kafka进行缓存，高峰期过去数据同步会自动跟上。
 
 ## 14 如何解决数据倾斜的问题？
 
-​        “**性能优化**”和“**数据倾斜**”，必问问题。下面是一种比较靠谱的回答：
+“**性能优化**”和“**数据倾斜**”，必问问题。下面是一种比较靠谱的回答：
 
 * 提前在map进行combine，减少传输的数据量
 
