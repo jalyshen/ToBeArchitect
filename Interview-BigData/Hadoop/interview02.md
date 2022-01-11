@@ -132,7 +132,9 @@ JVM重用可以使得JVM实例在同一个job中重新使用N次，N的值可以
 1. 如果MR造成系统宕机，此时要控制Yarn同时运行的任务数，和每个任务申请的最大内存。调整参数：yarn.scheduler.maximum-allocation-mb （单个任务可申请的最多物理内存量，默认时8192M）
 2. 如果写入文件过快造成NameNode宕机，那么调高Kafka的存储大小，控制从Kafka到HDFS的写入速度。例如：可以调整Flume每批次拉取数据量的大小参数batchsize……
 
-## 5 Hadoop解决数据倾斜方法
+
+
+## 5. Hadoop解决数据倾斜方法
 
 ### 5.1 提前在map进行combine，减少传输的数据量
 

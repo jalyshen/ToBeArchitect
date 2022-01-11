@@ -43,9 +43,9 @@ AbstractQueuedSynchronizer（AQS） 是 Java 中非常重要的一个框架类�
     }
 ```
 
-***exclusiveOwnerThread*** 代表的是当程获得同步的线程。因为是独占模式，在 exclusiveOwnerThread 持有同步的过程中其他线程的任何同步获取请求将得不到满足。
+私有的线程变量 ***exclusiveOwnerThread*** 代表的是当程获得同步的线程。因为是**独占模式**，在 exclusiveOwnerThread 持有同步的过程中其他线程的任何同步获取请求将得不到满足。
 
-至此，需要说明的是，AQS 不仅支持独占模式下的同步实现，还支持共享模式下的同步实现。在 Java 的锁的实现上，就有**共享锁**和**独占锁**的区别，而这些实现都是基于AQS对于共享同步和独占同步的支持。从上面展示的 AQS 提供的方法中，可以发现 AQS 的API 大致分为三类：
+至此，需要说明的是，**AQS 不仅支持独占模式下的同步实现，还支持共享模式下的同步实现。**在 Java 的锁的实现上，就有**共享锁**和**独占锁**的区别，而这些实现都是基于AQS对于共享同步和独占同步的支持。从上面展示的 AQS 提供的方法中，可以发现 AQS 的API 大致分为三类：
 
 * 类似 *acquire ( int )* 的一类，是最基本的一类，不可被中断
 * 类似 *acquireInterruptibly( int )* 的一类，可以被中断
@@ -234,20 +234,20 @@ AQS 使用 **双向链表** 来管理请求同步的 Node，保存了链表的 h
     }        
 ```
 
-​        首先，调用 **tryAcquire** 来尝试获取锁，而 **tryAcquire** 这个方法是需要子类来实现的，子类的实现无非就是通过 ***compareAndSetState、getState、setState*** 三个方法来操作同步变量 state，子类的方法实现需要根据各自的需求场景来实现。
+首先，调用 **tryAcquire** 来尝试获取锁，而 **tryAcquire** 这个方法是需要子类来实现的，子类的实现无非就是通过 ***compareAndSetState、getState、setState*** 三个方法来操作同步变量 state，子类的方法实现需要根据各自的需求场景来实现。
 
-​        如果 **tryAcquire** 返回 ***true***，也就是成功改变了 state 的值了，也就是获得了同步锁了，那么就可以退出了。
+如果 **tryAcquire** 返回 ***true***，也就是成功改变了 state 的值了，也就是获得了同步锁了，那么就可以退出了。
 
-​        如果 **tryAcquire** 返回 ***false***，说明有其他的线程获得了锁，这个时候 AQS 会使用 ***addWaiter*** 将当前的线程添加到等待队列的尾部，等待再次竞争。需要注意的是，此时，会将当前线程标记为独占模式。
+如果 **tryAcquire** 返回 ***false***，说明有其他的线程获得了锁，这个时候 AQS 会使用 ***addWaiter*** 将当前的线程添加到等待队列的尾部，等待再次竞争。需要注意的是，此时，会将当前线程标记为独占模式。
 
-​        重头戏来了，方法 ***acquireQueued( )*** 使得新添加的 Node 在一个 for 死循环中不断的轮询，也就是自旋， **acquireQueued** 方法退出的条件是：
+重头戏来了，方法 ***acquireQueued( )*** 使得新添加的 Node 在一个 for 死循环中不断的轮询，也就是自旋， **acquireQueued** 方法退出的条件是：
 
 1. 该节点的前驱节点是头节点，头节点代表的是获得锁的节点，只有它释放了 state ，其他线程才能获得这个变量的所有权
 2. 在条件 1 的前提下，方法 **tryAcquire** 返回 **true**，也就是可以获得同步资源 state
 
 满足上面两个条件后，这个 Node 就会获得锁，根据 AQS 的规定，获得锁的 Node **必须**是链表的头节点，所以需要将当前节点设定为头节点。那如果不符合上面两个条件的 Node 会如何呢？看 for 循环里的第二个分支：
 
-​        首先是 ***shouldParkAndFailedAcquired()*** 方法，从名字上说，应该是判断是否应该 park 当前线程，然后是方法 ***parkAndCheckInterrupt( )*** ，这个方法是在 shouldParkAndFailedAcquired() 返回 ***true*** 的前提下才会执行。意思就是首先判断一下是否需要 park 该 Node，如果需要，那就 park 它。关于线程的 park 和 unpark，AQS 使用了底层的技术来实现，不做分析。现在分析一下，在什么情况下，Node 会被 park （block）：
+首先是 ***shouldParkAndFailedAcquired()*** 方法，从名字上说，应该是判断是否应该 park 当前线程，然后是方法 ***parkAndCheckInterrupt( )*** ，这个方法是在 shouldParkAndFailedAcquired() 返回 ***true*** 的前提下才会执行。意思就是首先判断一下是否需要 park 该 Node，如果需要，那就 park 它。关于线程的 park 和 unpark，AQS 使用了底层的技术来实现，不做分析。现在分析一下，在什么情况下，Node 会被 park （block）：
 
 ```java
     private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
