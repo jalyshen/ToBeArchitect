@@ -6,7 +6,7 @@
 
 ## 一. AQS 介绍
 
-AbstractQueuedSynchronizer（AQS） 是 Java 中非常重要的一个框架类，它实现了最核心的多线程同步语义，只要继承 AbstractQueuedSynchronizer ，就可以非常方便的实现自己的线程同步器。Java 中的 **锁Lock**  就是基于AQS来实现的。
+AbstractQueuedSynchronizer（AQS） - 同步队列，是 Java 中非常重要的一个框架类，它实现了最核心的多线程同步语义，只要继承 AbstractQueuedSynchronizer ，就可以非常方便的实现自己的线程同步器。Java 中的 **锁Lock**  就是基于AQS来实现的。
 
 下面展示了AQS类提供的一些方法：
 
@@ -325,3 +325,51 @@ AQS 使用 **双向链表** 来管理请求同步的 Node，保存了链表的 h
 
 
 ### 2.2 共享模式
+
+和独占模式一样，分析一下 acquireShared 的过程：
+
+```java
+public final void acquireShared(int arg) {
+    if (tryAcquireShared(arg) < 0) {
+        doAcquireShared(args);
+    }
+}
+
+private void doAcquireShared(int arg) {
+    final Node node = addWaiter(Node.SHARED);
+    boolean failed = true;
+    try {
+        boolean interrupted = false;
+        // 自旋开始
+        for (;;) {
+            final Node p = node.predecessor();
+            if (p == head) {
+                int r = tryAcquireShared(arg);
+                if (r >= 0) {
+                    setHeadAndPropagate(node, r);
+                    p.next = null;
+                    if (interrupted) selfInterrupt();
+                    failed = false;
+                    return;
+                }
+            }
+            if (shouldParkAfterFailedAcquire(p, node) &&
+               parkAndCheckInterrupt()) {
+                interrupted = true;
+            }
+        }
+    } finally {
+        if (failed ) cancelAcquire(node);
+    }
+}
+```
+
+获锁的流程如下：
+
+1. 尝试使用 tryAcquireShared( ) 方法，如果返回值大于等于0，则表示成功；否则运行 doAcquireShared 方法
+2. 将当前竞争同步的线程添加到链表尾部，然后自旋
+3. 获取前驱节点，如果前驱节点是头节点，也就是说前驱节点现在持有锁，那么继续运行下一步（4），否则 park 该节点等待被 unpark
+4. 使用 tryAcquireShared 方法来竞争，如果返回值大于等于0，那么就算是获取成功了，否则继续自旋尝试
+
+共享模式下的 release 流程：
+
