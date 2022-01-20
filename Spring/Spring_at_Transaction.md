@@ -430,7 +430,7 @@ public class Application6 {
 
 ### 2.7 外部调用方法A，A内部调用方法B，A没有@Transaction注解而B有@Transactional注解
 
-在 UserService 里面添加 save7 方法，和 save72 方法，其中 save72 上面标有@Transactional注解，且save72里面有异常：
+在 UserService 里面添加save7方法，和save72方法，其中save72上面标有@Transactional注解，且save72里面有异常：
 
 ```java
     public void save7() {
@@ -472,7 +472,7 @@ public class Application7 {
 
 这是因为， save7 方法没有标注@Transactional注解，它内部调用 save72()其实可以看做是 this.save72() ，**这里的this其实是个普通对象，没有被AOP动态代理增强过**。所以 save72()出现异常的时候没有回滚。
 
-那么其实也可以知道，如果save7和sav72上面都有@Transactional注解的话，事务最终会回滚，并不是因为save72上面的注解生效了，而是因为save7上面的注解生效了，save72回滚只不过是因为被包在了save7的事务里面，是在整个大事务里面回滚的。
+也可以知道，如果save7和sav72上面都有@Transactional注解的话，事务最终会回滚，并不是因为save72上面的注解生效了，而是因为save7上面的注解生效了，save72回滚只不过是因为被包在了save7的事务里面，是在整个大事务里面回滚的。
 
 ### 2.8 标注了@Transactional的方法A的propagation配置成了REQUIRE，标注了@Transactional的方法B的propagation配置成了REQUIRE_NEW，方法A调用了方法B
 

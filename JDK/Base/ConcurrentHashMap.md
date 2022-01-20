@@ -16,9 +16,9 @@ ConcurrentHashMap 是一个存储 Kev/Value 对的容器，并且是线程安全
 
 ![2](./images/ConcurrentHashMap/2.webp)
 
-看 ConcurrentHashMap 的源码，会发现很多方法和代码与 HashMap 很**相似**，所以就有人问：为啥不继承 HashMap 呢？
+看 ConcurrentHashMap 的源码，会发现很多方法和代码与 HashMap 很**相似**，所以有人问：为啥不继承 HashMap 呢？
 
-继承虽然办法好，但 ConcurrentHashMap 都是在**方法中间**进行一些枷锁操作，即，加锁操作会切割原来的方法，继承基本上无法解决这个问题了。
+继承虽然办法好，但 ConcurrentHashMap 都是在<font color='red'>**方法中间**</font>进行一些枷锁操作，即，加锁操作会切割原来的方法，继承基本上无法解决这个问题了。
 
 ### 1.1 ConcurrentHashMap 与 HashMap 的异同
 
@@ -29,7 +29,7 @@ ConcurrentHashMap 是一个存储 Kev/Value 对的容器，并且是线程安全
 
 #### 1.1.2 不同
 
-* 红黑树结构略有不同。HashMap 的红黑树中的节点叫做 ***TreeNode***，TreeNode 不仅仅有属性，还维护着红黑树的结构，比如查找、新增等等；ConcurrentHashMap 中红黑树被拆分成两块，TreeNode 仅仅维护着属性和查找功能，新增了 TreeBin，来维护红黑树结构，并负责根节点的加锁和解锁
+* 红黑树结构略有不同。HashMap 的红黑树中的节点叫做 ***TreeNode***，TreeNode 不仅仅有属性，还维护着红黑树的结构，比如查找、新增等等；**ConcurrentHashMap 中红黑树被拆分成两块，**TreeNode 仅仅维护着属性和查找功能，新增了 TreeBin，来维护红黑树结构，并负责根节点的加锁和解锁
 * ConcurrentHashMap 新增 ForwardingNode （转移）节点，扩容的时候会使用到，通过使用该节点，来保证扩容时的线程安全
 
 ## 二. 基本构成
@@ -170,7 +170,7 @@ ConcurrentHashMap 在 put 方法上的整体思路和 HashMap 相同，但在线
 
 #### 3.1.1 数组初始化时的线程安全
 
-数组初始化时，首先通过自旋来保证一定可以初始化成功，然后通过 CAS 设置 ***SIZECTL*** 变量的值，来保证同一时刻只能有一个线程对数组进行初始化，CAS 成功后，还会再次判断当前数组是否已经初始化完成。如果已经初始化完成，就不会再次初始化，通过 “***自旋 + CAS + 双重 check*** ”等手段保证了数组初始化时的线程安全。
+数组初始化时，首先**通过自旋来保证一定可以初始化成功**，然后通过 CAS 设置 ***SIZECTL*** 变量的值，来保证同一时刻只能有一个线程对数组进行初始化，CAS 成功后，还会再次判断当前数组是否已经初始化完成。如果已经初始化完成，就不会再次初始化，通过 “***自旋 + CAS + 双重 check*** ”等手段保证了数组初始化时的线程安全。
 
 看看初始化的代码 ***initTable*** 方法：
 

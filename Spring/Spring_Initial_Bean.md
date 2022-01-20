@@ -61,7 +61,7 @@
 
 ## 三. 源码求证Bean初始化过程
 
-### 3.1 非Spring容齐下的Bean初始化过程
+### 3.1 非Spring容器下的Bean初始化过程
 
 Java文件经过javac（JDK）编译后，形成.class文件。当运行含有main方法的java代码时，启动JVM，JVM会从磁盘上将 .class 文件加载到方法区（或者元数据区）。当对象被 new 出来时，会在堆上分配一块内存用来存储这个对象。
 
@@ -84,9 +84,9 @@ BeanDefinition 的定义，可以详见 *org.springframework.beans.factory.confi
 
 最后，对这些类进行遍历，会在 Spring 加载时对**单例类并且不是懒加载**的类进行 Bean 的初始化。初始化完毕后，会放到一个单例池中，即 singletonMap。
 
-对那些不是单例或者懒加载的类，就会在调用 getBean 方法时被初始化。
+**<font color='red'>对那些不是单例或者懒加载的类，就会在调用 getBean 方法时被初始化。</font>**
 
-### 3.3 查看TestService 的BeanDifinition
+### 3.3 查看 TestService 的 BeanDifinition
 
 ```java
 public static void main(String[] args) {
@@ -109,7 +109,7 @@ beanDefinition存储的信息如下：
 
 ### 3.4 原生的Java对象和Spring Bean 的区别
 
-上述初始化过程中，可以发现原生的Java对象和Spring Bean其实是有很大区别的。简单的说，Spring Bean是一个 Java 对象，而 Java 对象未必是一个 Spring Bean。它们之间最大的区别在于：原生Java对象的生命周期受JVM管控，而Spring Bean的受 Spring 框架定义。
+上述初始化过程中，可以发现原生的Java对象和Spring Bean其实是有很大区别的。简单的说，Spring Bean是一个 Java 对象，而 Java 对象未必是一个 Spring Bean。**它们之间最大的区别在于：原生Java对象的生命周期受JVM管控，而Spring Bean的受 Spring 框架定义**。
 
 #### 3.4.1 调用AnnotationConfigApplicatonContext
 
@@ -201,7 +201,7 @@ public void preInstantiateSingletons() throws BeansException {
 }
 ```
 
-上述的方法其实很简单，遍历所有需要初始化的bean，就是遍历存储beanName的list，并根据beanName作为key去查询beanDefinitionMap中的beanDefinition，校验对应的类，只有不是抽象类、是单例、不是懒加载的类才可以在spring容器初始化时被初始化。
+上述的方法其实很简单，遍历所有需要初始化的bean，就是遍历存储beanName的list，并根据beanName作为key去查询beanDefinitionMap中的beanDefinition，校验对应的类。只有不是抽象类、是单例、不是懒加载的类才可以在spring容器初始化时被初始化。
 
 bean初始化的方法在getBean(beanName)中。
 
@@ -301,7 +301,7 @@ protected <T> T doGetBean(
 
 doGetBean() 中调用了许多核心方法，比如：getSingleton()，createBean() 等，doGetBean() 大致的流程如下：
 
-1. 先去缓存池中查找该 bean 是否被加载过。如果加载过，返回。由于此时 Spring 加载时，会加载 testService，因此testService 该 bean 不存在缓存池中。
+1. 先去缓存池中查找该 bean 是否被加载过。如果加载过，返回；由于此时 Spring 加载时，会加载 testService，因此testService 该 bean 不存在缓存池中。
 2. 进行单例作用域或者原型作用域的bean的创建，由于 testService 是单例，这里只需关注单例的创建。
 
 来关注核心方法：
@@ -333,7 +333,7 @@ protected Object getSingleton(String beanName, boolean allowEarlyReference) {
 * 先从 singletonObjects 一级缓存中查询是否有 bean，如有就返回
 * 判断 bean 是否在初始化过程中。这个条件主要是为了循环依赖使用。循环依赖情况下，可能存在 bean 正在创建过程中。
 * 去三级缓存 earlySingletonObjects 中查询是否有 bean，如果有，则返回
-* 去二级缓存 singletonFactories 中查询是否存在 bean 的工厂，如果存在，获取该 bean 工厂对应的 bena，放到三级缓存中去，然后返回
+* 去二级缓存 singletonFactories 中查询是否存在 bean 的工厂，如果存在，获取该 bean 工厂对应的 bean，放到三级缓存中去，然后返回
 
 ### 4.2 createBean()
 

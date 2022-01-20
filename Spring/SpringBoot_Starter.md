@@ -18,7 +18,7 @@ Spring Boot 通过默认配置了很多框架的使用方式，帮助开发人�
 6. 配置完成后部署 tomcat，启动调试
 7. ……
 
-这些过程非常繁杂，而且很容易出现错误。如果使用 Spring Boot 就会非常便捷。首先，从 Spring Boot 的起步依赖开始……
+这些过程非常繁杂，且很容易出现错误。如果使用Spring Boot就会非常便捷。首先，从Spring Boot的起步依赖开始……
 
 ## 二. 起步依赖
 
@@ -265,7 +265,8 @@ public class DataSourceProperties implements BeanClassLoaderAware, InitializingB
     /**
      * Initialize the datasource with available DDL and DML scripts.
      */
-    private DataSourceInitializationMode initializationMode = DataSourceInitializationMode.EMBEDDED;
+    private DataSourceInitializationMode initializationMode = 
+             DataSourceInitializationMode.EMBEDDED;
 
     /**
      * Platform to use in the DDL or DML scripts (such as schema-${platform}.sql or
