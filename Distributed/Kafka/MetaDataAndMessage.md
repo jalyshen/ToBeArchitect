@@ -4,15 +4,15 @@
 
 
 
-​        Kafka 发送消息时， KafkaProducer 要将此消息追加到指定 Topic 的某个分区的 Leader 副本中，**首先**需要知道 Topic 的分区数量，经过留由后确定目标分区，**之后** KafkaProducer 需要知道目标分区的 Leader 副本所在服务器的地址、端口等信息，才能建立连接，将消息发送到 Kafka 中。因此，**在KafkaProducer 中维护了 Kafka 集群的元数据**，这些元数据记录了：某个 Topic 中有哪几个分区、每个分区的 Leader 副本分布在哪个节点上、Follower 副本分布在哪些节点上、哪些副本在 ISR 集合中以及这些节点的网络地址、端口。
+Kafka 发送消息时， KafkaProducer 要将此消息追加到指定 Topic 的某个分区的 Leader 副本中，**首先**需要知道 Topic 的分区数量，经过留由后确定目标分区，**之后** KafkaProducer 需要知道目标分区的 Leader 副本所在服务器的地址、端口等信息，才能建立连接，将消息发送到 Kafka 中。因此，**在KafkaProducer 中维护了 Kafka 集群的元数据**，这些元数据记录了：某个 Topic 中有哪几个分区、每个分区的 Leader 副本分布在哪个节点上、Follower 副本分布在哪些节点上、哪些副本在 ISR 集合中以及这些节点的网络地址、端口。
 
 ## 1 元数据
 
-​        关于Kafka 的元数据信息，可以从以下几个核心类入手：Node、TopicPartition、PartitionInfo、MetaData、Cluster。
+关于Kafka 的元数据信息，可以从以下几个核心类入手：Node、TopicPartition、PartitionInfo、MetaData、Cluster。
 
 ### 1.1 Node
 
-​        代表集群的节点，包含域名、主机IP、端口、机架等信息：
+代表集群的节点，包含域名、主机IP、端口、机架等信息：
 
 ```java
 /**
@@ -38,7 +38,7 @@ public class Node {
 
 ### 1.2 TopicPartition
 
-​        代表 Kafka 中某个 Topic 的分区映射，主要由主题（topic）名和各分区编号组成。
+代表 Kafka 中某个 Topic 的分区映射，主要由主题（topic）名和各分区编号组成。
 
 ```java
 package org.apache.kafka.common;
@@ -61,7 +61,7 @@ public final class TopicPartition implements Serializable {
 
 ### 1.3 PartitionInfo
 
-​        主要阐述了集群主题和分区的映射信息，包括分区的 leader 和 replica 分布情况等。比如某个 topic 在集群中的分区和副本所在的位置。
+主要阐述了集群主题和分区的映射信息，包括分区的 leader 和 replica 分布情况等。比如某个 topic 在集群中的分区和副本所在的位置。
 
 ```java
 package org.apache.kafka.common;
@@ -96,7 +96,7 @@ public class PartitionInfo {
 
 ### 1.4 Cluster
 
-​        代表 Kafka 集群节点、主题和分区的组成信息：
+代表 Kafka 集群节点、主题和分区的组成信息：
 
 ```java
 /**
@@ -141,7 +141,7 @@ public final class Cluster {
 
 ### 1.5 MetaData
 
-​        在 Cluster 类的基础上进一步做了封装，包含了集群信息最后的更新时间、版本号以及是否需要等待更新等信息。
+在 Cluster 类的基础上进一步做了封装，包含了集群信息最后的更新时间、版本号以及是否需要等待更新等信息。
 
 ```java
 public final class Metadata {
@@ -249,7 +249,7 @@ public final class Metadata {
 
 ## 2 消息封装
 
-​        这里就是介绍 ***RecordAccumulator*** 对象。先来介绍这个类，通过该类的注释可以看到，该类的本质就是用于收集消息的队列，底层实现是 MemoryRecords。
+这里就是介绍 ***RecordAccumulator*** 对象。先来介绍这个类，通过该类的注释可以看到，该类的本质就是用于收集消息的队列，底层实现是 MemoryRecords。
 
 ```java
 /**
@@ -313,7 +313,7 @@ public class MemoryRecords implements Records {
 }
 ```
 
-​        MemoryRecords 有几个重要的方法，可以去了解一下。
+MemoryRecords 有几个重要的方法，可以去了解一下。
 
 ![2](./images/MetaDataAndMessage/2.png)
 
@@ -326,7 +326,7 @@ public class MemoryRecords implements Records {
 
 ### 2.2 RecordBatch
 
-​        现在聊聊RecordBatch。其实，上面提到的**每个**RecordBatch就是**一个** MemoryRecord。
+现在聊聊RecordBatch。其实，上面提到的**每个**RecordBatch就是**一个** MemoryRecord。
 
 ```java
 /**
@@ -375,5 +375,5 @@ public final class RecordBatch {
 }
 ```
 
-​        从上面的流程图可以看到，将消息封装成一个一个的 RecordBatch之后，放到 Deque队列中，一个 RecordAccumulator 由一个至多个的 Dequeue 组成，这样可以减少通信成本，批量发送消息，从而也能提高吞吐量。
+从上面的流程图可以看到，将消息封装成一个一个的 RecordBatch之后，放到 Deque队列中，一个 RecordAccumulator 由一个至多个的 Dequeue 组成，这样可以减少通信成本，批量发送消息，从而也能提高吞吐量。
 

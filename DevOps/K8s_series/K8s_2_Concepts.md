@@ -48,7 +48,13 @@ Pod这个单词，英文里有“吊舱”、“豆荚” 之意，所以很容�
 
 #### Node
 
-Node就是节点的意思，因为K8S是分布式架构，所以K8S一样有master 和slave 的区分。master 就是主节点，可以理解为K8S的核心大脑，里面跑着api server、scheduler、replication controller等关键服务。slave（K8S里一般叫work节点，负责干活的） 就是从节点，里面跑着一个或者多个Pod、kubelet、kube proxy。如果了解过openstack，那么理解K8S的node角色就非常简单了，在openstack里有控制节点和计算节点，控制节点对应着master，计算节点对应work。
+Node就是节点的意思，因为K8S是分布式架构，所以K8S一样有master 和slave 的区分。
+
+master 就是主节点，可以理解为K8S的核心大脑，里面跑着api server、scheduler、replication controller等关键服务。
+
+slave（K8S里一般叫work节点，负责干活的） 就是从节点，里面跑着一个或者多个Pod、kubelet、kube proxy。
+
+如果了解过openstack，那么理解K8S的node角色就非常简单了，在openstack里有控制节点和计算节点，控制节点对应着master，计算节点对应work。
 
 #### Cluster
 
