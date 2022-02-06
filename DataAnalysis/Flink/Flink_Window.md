@@ -4,27 +4,27 @@
 
 
 
-​        窗口是流式应用中十分常见的操作。它们可以在不限数据流上基于有界区间实现聚合等转换。通常情况下，这些区间都是基于时间算子定义的。窗口函数提供了一种基于有限大小的桶对事件进行分组，并对这些桶中的有限内容进行计算。例如，窗口算子可以将数据流中的事件按每 5 分钟的窗口进行分组，并计算出每个窗口中收到的事件数。此外，Flink 还支持自定义窗口功能。
+窗口是流式应用中十分常见的操作。它们可以在不限数据流上基于有界区间实现聚合等转换。通常情况下，这些区间都是基于时间算子定义的。窗口函数提供了一种基于有限大小的桶对事件进行分组，并对这些桶中的有限内容进行计算。例如，窗口算子可以将数据流中的事件按每 5 分钟的窗口进行分组，并计算出每个窗口中收到的事件数。此外，Flink 还支持自定义窗口功能。
 
 ## 1. 定义窗口算子
 
-​        窗口算子可用在键值分区或非键值分区的数据流上。用于键值分区窗口的算子可以并行计算，而非键值分区窗口只能单线程处理。
+窗口算子可用在键值分区或非键值分区的数据流上。用于键值分区窗口的算子可以并行计算，而非键值分区窗口只能单线程处理。
 
-​        新建一个窗口算子需要指定两个窗口组件：
+新建一个窗口算子需要指定两个窗口组件：
 
 ### 1.1 窗口分配器
 
-​        一个用于决定输入流中的元素该如何划分的窗口分配器（window assigner）。窗口分配器会产生一个 WindowedStream（如果用在非键值分区的 DataStream 上则是 AllWindowedStream）。
+一个用于决定输入流中的元素该如何划分的窗口分配器（window assigner）。窗口分配器会产生一个 WindowedStream（如果用在非键值分区的 DataStream 上则是 AllWindowedStream）。
 
 ### 1.2 窗口函数
 
-​        一个作用于 WindowedStream（或 AllWindowedStream）上，用于处理分配到窗口中元素的窗口函数。
+一个作用于 WindowedStream（或 AllWindowedStream）上，用于处理分配到窗口中元素的窗口函数。
 
 ![1](./images/Flink_Window/1.png)
 
 ## 2 如何使用 
 
-​        上面介绍了什么是窗口，那么该如何使用窗口呢？具体如下面的代码片段
+上面介绍了什么是窗口，那么该如何使用窗口呢？具体如下面的代码片段
 
 ### 2.1 Keyed Windows
 
@@ -55,19 +55,19 @@ stream
 
 ## 3. 内置窗口分配器
 
-​        WindowAssigner 负责将输入的数据分配到一个或多个窗口，Flink内置了许多WindowAssigner，这些WindowAssigner可以满足大部分的使用场景。比如 tumbling windows，sliding Windows， session Windows， global Windows。如果这些内置的WindowAssigner不能满足需求，则可以通过继承WindowAssigner类来实现自定义的WindowAssigner。
+WindowAssigner 负责将输入的数据分配到一个或多个窗口，Flink内置了许多WindowAssigner，这些WindowAssigner可以满足大部分的使用场景。比如 tumbling windows，sliding Windows， session Windows， global Windows。如果这些内置的WindowAssigner不能满足需求，则可以通过继承WindowAssigner类来实现自定义的WindowAssigner。
 
-​        上面的WindowAssigner是基于时间的（Time-Based windows）（左闭右开）。它对外提供了获取窗口边界、检查窗口是否相交，以及合并重叠窗口等方法。
+上面的WindowAssigner是基于时间的（Time-Based windows）（左闭右开）。它对外提供了获取窗口边界、检查窗口是否相交，以及合并重叠窗口等方法。
 
-​        接下里介绍 DataStream API 中的多种内置窗口分配器以及如何使用它们来定义窗口算子。
+接下里介绍 DataStream API 中的多种内置窗口分配器以及如何使用它们来定义窗口算子。
 
 ### 3.1 滚动窗口（Tumbling Windows）
 
-​        如下图所示，滚动窗口分配器会将元素放入**大小固定且互不重叠**的窗口中。
+如下图所示，滚动窗口分配器会将元素放入**大小固定且互不重叠**的窗口中。
 
 ![2](./images/Flink_Window/2.png)
 
-​        DataStream API 针对事件时间和处理时间的滚动窗口分别提供了对应的分配器--TumblingEventTimeWindows 和 TumblingProcessingTimeWindows。滚动窗口分配器只接收的一个参数：以时间单位表示的窗口大小。它可以利用分配器的 *of(Time Size)* 方法制定。时间间隔允许以毫秒、秒、分钟、小时或者天。
+DataStream API 针对事件时间和处理时间的滚动窗口分别提供了对应的分配器--TumblingEventTimeWindows 和 TumblingProcessingTimeWindows。滚动窗口分配器只接收的一个参数：以时间单位表示的窗口大小。它可以利用分配器的 *of(Time Size)* 方法制定。时间间隔允许以毫秒、秒、分钟、小时或者天。
 
 #### 使用EventTime
 
@@ -91,7 +91,7 @@ StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironm
                 .process(new MinTemperatureWindow());
 ```
 
-​        默认情况下，滚动窗口会和纪元时间 1970-01-01 -00 :00:00.000 对齐。例如，大小为 1 小时的分配器将会在 00:00:00、01:00:00、02:00:00 定义窗口。或者也可以通过第二个参数指定一个偏移量。以下代码展示了偏移量为 15 分钟的窗口，它们将从 00:15:00、01:15:00、02:15:00 …… 时间点开始：
+默认情况下，滚动窗口会和纪元时间 1970-01-01 -00 :00:00.000 对齐。例如，大小为 1 小时的分配器将会在 00:00:00、01:00:00、02:00:00 定义窗口。或者也可以通过第二个参数指定一个偏移量。以下代码展示了偏移量为 15 分钟的窗口，它们将从 00:15:00、01:15:00、02:15:00 …… 时间点开始：
 
 ```java
 StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -104,17 +104,17 @@ StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironm
 
 ### 3.2 滑动窗口（Sliding Windows）
 
-​        如下图所示，滑动窗口分配器将元素分配给大小固定且按制定滑动间隔移动的窗口。
+如下图所示，滑动窗口分配器将元素分配给大小固定且按制定滑动间隔移动的窗口。
 
 ![3](./images/Flink_Window/3.png)
 
 
 
-​         对于滑动窗口而言，需要指定窗口大小以及用于定义新窗口开始频率的滑动间隔。如果滑动间隔小于窗口大小，则窗口会出现重叠，此时元素会被分配给多个窗口；如果滑动间隔大于窗口大小，则一些元素可能不会分配给任何窗口，因此可能会被直接丢弃。
+对于滑动窗口而言，需要指定窗口大小以及用于定义新窗口开始频率的滑动间隔。如果滑动间隔小于窗口大小，则窗口会出现重叠，此时元素会被分配给多个窗口；如果滑动间隔大于窗口大小，则一些元素可能不会分配给任何窗口，因此可能会被直接丢弃。
 
-​        关于时间的选择，可以使用 EventTime 或者 ProcessingTime，分别对应的 window assigner为：SlidingEventTimeWindows 、SlidingProcessingTimeWindows。 用户可以使用Window Assigner的 *of(size)* 方法指定时间间隔。
+关于时间的选择，可以使用 EventTime 或者 ProcessingTime，分别对应的 window assigner为：SlidingEventTimeWindows 、SlidingProcessingTimeWindows。 用户可以使用Window Assigner的 *of(size)* 方法指定时间间隔。
 
-​        以下代码展示了如何将传感器读数按照大小为 1 小时、滚动间隔为 15 分钟的滑动窗口进行分组。每个读数将被放入四个窗口中。
+以下代码展示了如何将传感器读数按照大小为 1 小时、滚动间隔为 15 分钟的滑动窗口进行分组。每个读数将被放入四个窗口中。
 
 #### 使用EventTime
 
@@ -138,11 +138,11 @@ DataStream<Tuple2<String, Long>> slidingProcessMinTemp = inputStream.keyBy("id")
 
 ### 3.3 会话窗口（Session Window）
 
-​        会话窗口将元素放入长度可变且不重叠的窗口中。会话窗口的边界由非活动间隔，即持续没有收到记录的时间间隔来定义。下图解释了如何将元素分配到会话窗口中。
+会话窗口将元素放入长度可变且不重叠的窗口中。会话窗口的边界由非活动间隔，即持续没有收到记录的时间间隔来定义。下图解释了如何将元素分配到会话窗口中。
 
 ![4](./images/Flink_Window/4.png)
 
-​        以下示例展示了如何将传感器读数按照会话窗口进行分组，其中每个会话的非活动时间都设置为15分钟：
+以下示例展示了如何将传感器读数按照会话窗口进行分组，其中每个会话的非活动时间都设置为15分钟：
 
 #### 使用EventTime
 
@@ -164,11 +164,11 @@ DataStream<Tuple2<String, Long>> sessionProcessMinTemp = inputStream.keyBy("id")
                 .process(new MinTemperatureWindow());
 ```
 
-​        由于会话窗口的开始和结束都取决于接收的元素，所以窗口分配器无法实时将所有元素分配到正确的窗口。事实上，SessionWindows 分配器会将每个到来的元素映射到一个它自己的窗口中。该窗口的起始时间是元素的时间戳，大小为会话间隔。随后分配器会将所有范围存在重叠的窗口合并。
+由于会话窗口的开始和结束都取决于接收的元素，所以窗口分配器无法实时将所有元素分配到正确的窗口。事实上，SessionWindows 分配器会将每个到来的元素映射到一个它自己的窗口中。该窗口的起始时间是元素的时间戳，大小为会话间隔。随后分配器会将所有范围存在重叠的窗口合并。
 
 ## 4. 在窗口上应用函数
 
-​        窗口函数定义了针对窗口内元素的计算逻辑。可用于窗口的函数类型有两种：
+窗口函数定义了针对窗口内元素的计算逻辑。可用于窗口的函数类型有两种：
 
 1. **增量聚合函数**：它的应用场景是窗口内以状态形式存储某个值且需要根据每个加入窗口的元素对该值进行更新。此类函数通常会十分节省空间且最终会将聚合值作为单个结果发送出去。ReduceFunction 和 AggregateFunction 就属于增量聚合函数。
 2. **全量窗口函数**：它会收集窗口内的所有元素，并在执行计算时对它们进行遍历。虽然全量窗口函数通常需要占用更多空间，但它和增量聚合函数相比，支持更复杂的逻辑。ProcessWindowFunction 就是一个全量窗口的函数。
@@ -177,9 +177,9 @@ DataStream<Tuple2<String, Long>> sessionProcessMinTemp = inputStream.keyBy("id")
 
 ### 4.1 ReduceFunction
 
-​        输入两个相同类型的数据元素按照指定的计算方法进行聚合，然后输出类型相同的一个结果元素。<font color='red'>要求输入元素的数据类型与输出元素的数据类型必须一致</font>。实现的效果是使用上一次的结果值与当前值进行聚合。
+输入两个相同类型的数据元素按照指定的计算方法进行聚合，然后输出类型相同的一个结果元素。<font color='red'>要求输入元素的数据类型与输出元素的数据类型必须一致</font>。实现的效果是使用上一次的结果值与当前值进行聚合。
 
-​        下面的示例展示的是Lamda函数，计算每 15 秒的最低温度。
+下面的示例展示的是Lamda函数，计算每 15 秒的最低温度。
 
 ```java
 DataStream<Tuple2<String, Double>> minTempPerWindow = inputStream.map(new MapFunction<SensorReading, Tuple2<String, Double>>() {
@@ -199,9 +199,9 @@ DataStream<Tuple2<String, Double>> minTempPerWindow = inputStream.map(new MapFun
 
 ### 4.2 AggregateFunction
 
-​        和 ReduceFunction 类似，AggregateFunction 也会以增量的方式应用于窗口内的元素。此外，使用了 AggregateFunction 的窗口算子，其状态也只有一个值。
+和 ReduceFunction 类似，AggregateFunction 也会以增量的方式应用于窗口内的元素。此外，使用了 AggregateFunction 的窗口算子，其状态也只有一个值。
 
-​        虽然 AggreateFunction 和 ReduceFunction 相比，接口更灵活，但同时实现也更为复杂。以下代码展示了 AggregateFunction 接口：
+虽然 AggreateFunction 和 ReduceFunction 相比，接口更灵活，但同时实现也更为复杂。以下代码展示了 AggregateFunction 接口：
 
 ```java
 /** @param <IN>  输入元素的数据类型
@@ -224,9 +224,9 @@ public interface AggregateFunction<IN, ACC, OUT> extends Function, Serializable 
 }
 ```
 
-​        该接口定义了输入类型 IN，累加器类型 ACC，以及结果类型 OUT。它和 ReduceFunction 不同的是中间数据类型以及结果类型不再依赖输入类型。
+该接口定义了输入类型 IN，累加器类型 ACC，以及结果类型 OUT。它和 ReduceFunction 不同的是中间数据类型以及结果类型不再依赖输入类型。
 
-​        下面的示例展示了如何使用 AggregateFunction 计算每个窗口内传感器读数的平均温度。其累加器负责维护不断变化的温度总和及数量， getResult() 方法用来计算平均值：
+下面的示例展示了如何使用 AggregateFunction 计算每个窗口内传感器读数的平均温度。其累加器负责维护不断变化的温度总和及数量， getResult() 方法用来计算平均值：
 
 ```java
 public class BuildinWindowOperator {
@@ -279,9 +279,9 @@ public class BuildinWindowOperator {
 
 ### 4.3 ProcessWindowFunction
 
-​        前面提到的 ReduceFunction 和 AggregateFunction 都是基于中间状态实现增量计算的窗口函数。有些时候，需要使用整个窗口的所有数据进行计算，比如求**中位数**和**众数**。另外，ProcessWindowFunction 的Context 对象可以访问窗口的一些元数据信息，比如窗口结束时间、水位线等。ProcessWindowFunction 能够更加灵活地支持基于窗口全部数据元素的结果计算。
+前面提到的 ReduceFunction 和 AggregateFunction 都是基于中间状态实现增量计算的窗口函数。有些时候，需要使用整个窗口的所有数据进行计算，比如求**中位数**和**众数**。另外，ProcessWindowFunction 的Context 对象可以访问窗口的一些元数据信息，比如窗口结束时间、水位线等。ProcessWindowFunction 能够更加灵活地支持基于窗口全部数据元素的结果计算。
 
-​        在系统内部，由ProcessWindowFunction 处理的窗口会将所有已分配的数据存储到ListState中，通过将数据收集起来且提供对于窗口的元数据及其它一些特征的访问和使用，应用场景比 ReduceFunction 和 AggregateFunction 更加广泛。关于 ProcessWindowFunction 抽象类的源码，如下：
+在系统内部，由ProcessWindowFunction 处理的窗口会将所有已分配的数据存储到ListState中，通过将数据收集起来且提供对于窗口的元数据及其它一些特征的访问和使用，应用场景比 ReduceFunction 和 AggregateFunction 更加广泛。关于 ProcessWindowFunction 抽象类的源码，如下：
 
 ```java
 /**
@@ -343,9 +343,9 @@ public abstract class ProcessWindowFunction<IN, OUT, KEY, W extends Window> exte
 }
 ```
 
-​        process() 方法在被调用时会传入窗口的键值、一个用于访问窗口内元素的 Iterator 以及一个用于发出结果的 Collector。此外，该方法和其他处理方法一样，都有一个 Context 参数。 ProcessWindowFunction 的 Context 对象可以访问窗口的元数据，当前处理时间和水位线，用于管理单个窗口和每个键值全局状态的状态存储以及用于发出数据的侧输出。
+process() 方法在被调用时会传入窗口的键值、一个用于访问窗口内元素的 Iterator 以及一个用于发出结果的 Collector。此外，该方法和其他处理方法一样，都有一个 Context 参数。 ProcessWindowFunction 的 Context 对象可以访问窗口的元数据，当前处理时间和水位线，用于管理单个窗口和每个键值全局状态的状态存储以及用于发出数据的侧输出。
 
-​        下面的示例，将传感器温度的数据流按照每 5 秒的滚动窗口进行分组，随后使用 ProcessWindowFunction 计算每个窗口内的最低温和最高温。每个窗口都会发出一条记录，其中包含了窗口的开始、结束时间，以及窗口内的最低、最高温。
+下面的示例，将传感器温度的数据流按照每 5 秒的滚动窗口进行分组，随后使用 ProcessWindowFunction 计算每个窗口内的最低温和最高温。每个窗口都会发出一条记录，其中包含了窗口的开始、结束时间，以及窗口内的最低、最高温。
 
 ```java
 public class BuildinWindowProcess {
@@ -389,13 +389,13 @@ public class BuildinWindowProcess {
 }
 ```
 
-​        在系统内部，由 ProcessWinodwFunction 处理的窗口会将所有已分配的事件存储在 ListState中。ProcessWindowFunction 的应用场景比 ReduceFunction 和 AggregateFunction 更加广泛。但和执行增量聚合的窗口相比，收集全部事件的窗口状态要大得多。
+在系统内部，由 ProcessWinodwFunction 处理的窗口会将所有已分配的事件存储在 ListState中。ProcessWindowFunction 的应用场景比 ReduceFunction 和 AggregateFunction 更加广泛。但和执行增量聚合的窗口相比，收集全部事件的窗口状态要大得多。
 
 ### 4.4 增量聚合与 ProcessWindowFunction
 
-​        ProcessWinodwFunction 提供了强大的功能，但是唯一的缺点就是需要更大的状态存储数据。在很多时候，增量聚合的使用非常频繁，那么如何实现既支持增量聚合，又支持窗口元数据的操作呢？可以将 ReduceFunction 和 AggregateFunction 与 ProcessWinodwFunction 整合在一起使用。通过这种组合方式，分配给窗口的元素会立即被执行计算。当窗口触发时，会把聚合的结果传给 ProcessWinodwFunction，这样 ProcessWinodwFunction 的 process 方法的 iterable 参数就只有一个值，即增量聚合的结果。
+ProcessWinodwFunction 提供了强大的功能，但是唯一的缺点就是需要更大的状态存储数据。在很多时候，增量聚合的使用非常频繁，那么如何实现既支持增量聚合，又支持窗口元数据的操作呢？可以将 ReduceFunction 和 AggregateFunction 与 ProcessWinodwFunction 整合在一起使用。通过这种组合方式，分配给窗口的元素会立即被执行计算。当窗口触发时，会把聚合的结果传给 ProcessWinodwFunction，这样 ProcessWinodwFunction 的 process 方法的 iterable 参数就只有一个值，即增量聚合的结果。
 
-​        在 DataStream API 中，实现上述过程的途径是将 ProcessWinodwFunction 作为 reduce() 或者 aggregate() 方法的第二个参数：
+在 DataStream API 中，实现上述过程的途径是将 ProcessWinodwFunction 作为 reduce() 或者 aggregate() 方法的第二个参数：
 
 ```java
 input
@@ -417,7 +417,7 @@ input
 
 #### 4.4.1 ReduceFunction 与 ProcessWindowFunction 组合
 
-​        下面的示例展示了如何使用ReduceFunction和ProcessWindowFunction的组合来实现为每个传感器，每5秒发出一次最高和最低温度以及窗口的结束时间戳。
+下面的示例展示了如何使用ReduceFunction和ProcessWindowFunction的组合来实现为每个传感器，每5秒发出一次最高和最低温度以及窗口的结束时间戳。
 
 ```java
 public class ReduceProcessWindowFunction {
@@ -463,7 +463,7 @@ public class ReduceProcessWindowFunction {
 
 #### 4.4.2. AggregateFunction 与 ProcessWindowFunction 组合
 
-​        下面的示例展示了如何使用AggregateFunction和ProcessWindowFunction的组合来实现为每个传感器，每5秒发出一次最高和最低温度以及窗口的结束时间戳。
+下面的示例展示了如何使用AggregateFunction和ProcessWindowFunction的组合来实现为每个传感器，每5秒发出一次最高和最低温度以及窗口的结束时间戳。
 
 ```java
 public class AggregateProcessWindowFunction {
