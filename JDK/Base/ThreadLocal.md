@@ -190,3 +190,45 @@ ThreadLocalMap 作为 ThreadLoacl 的一个静态内部类，里面定义了 Ent
 问题：为啥key 是 threadlocal，而不是 当前的 thread ？
 
 ### 4. ThreadLocal 内存泄漏问题
+
+首先来看这个类：
+
+```java
+        /**
+         * The entries in this hash map extend WeakReference, using
+         * its main ref field as the key (which is always a
+         * ThreadLocal object).  Note that null keys (i.e. entry.get()
+         * == null) mean that the key is no longer referenced, so the
+         * entry can be expunged from table.  Such entries are referred to
+         * as "stale entries" in the code that follows.
+         */
+        static class Entry extends WeakReference<ThreadLocal<?>> {
+            /** The value associated with this ThreadLocal. */
+            Object value;
+
+            Entry(ThreadLocal<?> k, Object v) {
+                super(k);
+                value = v;
+            }
+        }
+```
+
+注释说的清洗，*Note that null keys (i.e.  entry.get() == null)*， 如果 *key threadlocal* 为 null了，这个 entry 就可以清除了。 ThreadLocal 是一个弱引用，当为 null 时， 会被当成垃圾回收。
+
+ ![1](.\images\ThreadLocal\1.jpg)
+
+重点来了，突然 ThreadLocal 是 null 了，也就是要被垃圾回收器回收了，但是此时 ThreadLocalMap（thread 的内部属性）生命周期和 Thread 的一样，它不会回收，这个时候就出现了一个现象，那就是 ThreadLocalMap 的 Key 没了，但是对应的 value 还在，从而造成了内存泄漏。
+
+**解决办法**：使用完 TreadLocal 后，执行 remove 操作，避免出现内存溢出情况。
+
+所以，如同 lock 的操作，最后要执行解锁操作一样， ThreadLocal 使用完毕一定要记得执行 remove 方法，清除当前线程的数值。如果不 remove 当前线程对应的 Value， 就会一直存在这个值。
+
+使用了线程池，可以达到“线程复用”的效果。但是归还线程之前记得清除 ThreadLocalMap ，要不然再取出该线程的时候， ThreadLocal 变量还会存在。这就不仅仅是内存泄漏的问题了，整个业务逻辑都可能出现错误。
+
+### 5. 为什么 Key 使用弱引用？
+
+如果使用强引用，当 ThreadLocal 对象的引用（强引用）被回收了，ThreadLocalMap 本身依然还持有 ThreadLocal 的强引用，如果没有手动删除这个 Key，则 ThreadLocal 不会被回收，所以只要当前线程不消亡， ThreadLocalMap 引用的那些对象就不会被回收，可以认为导致 Entry 内存泄漏。
+
+* 强引用：普通的引用，强引用指向的对象不会被回收
+* 软引用：仅有软引用指向的对象，只有发生GC且内存不足，才会被回收
+* 弱引用：仅有弱引用指向的对象，只要发生GC就会被回收
