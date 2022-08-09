@@ -4,7 +4,7 @@
 
 
 
-介绍 ADM 方法的每个阶段的功能内容。
+介绍 ADM (Architect Development Method)方法的每个阶段的功能内容。
 
 ## 一. 预备阶段
 
