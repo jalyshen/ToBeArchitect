@@ -10,7 +10,7 @@ Maven是目前Java开发主要使用的依赖管理构建工具之一。但是�
 
 scope 是Maven 坐标的一个关键字，它主要用来限制依赖的作用域。它有物种类型：
 
-![1](/Users/jaly/Documents/ToBeArchitect/JDK/Maven/images/Scope/1.png)
+![1](./images/Scope/1.png)
 
 #### compile
 
