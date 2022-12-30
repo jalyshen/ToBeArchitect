@@ -55,21 +55,21 @@ Spring的单例对象的初始化主要分为三步：
 /** Cache of singleton objects: bean name --> bean instance */ 
 private final Map<String, Object> singletonObjects = new ConcurrentHashMap<String, Object>(256); 
 
+/** Cache of early singleton objects: bean name --> bean instance */ 
+private final Map<String, Object> earlySingletonObjects = new HashMap<String, Object>(16);
+
 /** Cache of singleton factories: bean name --> ObjectFactory */ 
 private final Map<String, ObjectFactory<?>> singletonFactories = 
                                                   new HashMap<String, ObjectFactory<?>>(16); 
-
-/** Cache of early singleton objects: bean name --> bean instance */ 
-private final Map<String, Object> earlySingletonObjects = new HashMap<String, Object>(16);
 ```
 
 这三级缓存分别指：
 
-* singletonFactories ： 单例对象工厂的cache  -- 三级缓存
+* singletonObjects：单例对象的cache                                 -- 一级缓存
 
-* earlySingletonObjects ：提前曝光的单例对象的Cache  -- 二级缓存
+* earlySingletonObjects ：提前曝光的单例对象的Cache   -- 二级缓存
 
-* singletonObjects：单例对象的cache -- 一级缓存
+* singletonFactories ： 单例对象工厂的cache                     -- 三级缓存
 
 在创建bean的时候，首先想到的是从cache中获取这个单例的bean，这个缓存就是singletonObjects。主要调用方法就是：
 

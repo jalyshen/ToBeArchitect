@@ -77,6 +77,7 @@ public class ReaderFeedbackEvent extends ApplicationEvent {
 说明：
 
 * 业务的事件，需要继承 Spring的 ***ApplicationEvent***
+* Object source：事件发起方对象实例 - 本人补充
 
 #### 4.2.2 事件发布器 ReaderFeedbackEventPublisher
 
@@ -139,7 +140,7 @@ public class SendMailListener implements ApplicationListener<ReaderFeedbackEvent
 
 说明：
 
-* 实现 ***ApplicationListener*** 这个接口，获取事件中的反馈信息，并发送邮件
+* 实现 ***ApplicationListener*** 这个接口，获取事件中的反馈信息，并发送邮件（*onApplicationEvent方法*）
 
 #### 4.2.4 当反馈信息有点赞时才发送短信通知
 
