@@ -612,13 +612,13 @@ public class Person implements Serializable {
 
 * **Buffer**：Buffer 本质是一个数组缓冲区，读入或者写入到 Channel 中的所有对象都会先放在 Buffer 中
 * **Channel**：Channel 是对传统的输入/输出的模拟，在NIO中，所有的数据都需要通过通道流的形式传输
-* **Selecter**：Selecter 用于监听多个通道的事件（例如：连接打开、数据到达等），主要用户多个线程处理
+* **Selecter**：Selecter 用于监听多个通道的事件（例如：连接打开、数据到达等），主要用于多个线程处理
 
 #### 7.2.1 Buffer
 
 ​        Java NIO 中的 Buffer 用于和NIO中的 Channel 进行交互，交互时数据会从 Channel 读取到 buffer，或从 buffer 写入到 Channel 中。
 
-<img src="./images/Stream_Arch/10.jpeg" alt="10" style="zoom:50%;" />
+<img src="./images/Stream_Arch/10.jpeg" alt="10" style="zoom:30%;" />
 
 ​        Buffer 类似于一个数组，它可以保存多个**类型相同**的数据。
 
