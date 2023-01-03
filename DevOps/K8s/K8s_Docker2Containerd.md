@@ -68,7 +68,7 @@ Containerd 1.1 砍掉了CRI-containerd这个进程，直接把适配逻辑作为
 
 ​                                                                                     Containerd 1.1
 
-通过CRI plugin，Containerd可以有Kubelet来控制，Containerd创建的容器有K8s以Pod方式来组织和管理：
+通过CRI plugin，Containerd可以由Kubelet来控制，Containerd创建的容器由K8s以Pod方式来组织和管理：
 
 ![](./images/Docker2Containerd/K8s-Containerd-communicate.png)
 

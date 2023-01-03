@@ -41,7 +41,7 @@ RUN echo “\ndaemon off;” >> /etc/nginx/nginx.conf
 CMD /usr/sbin/nginx
 ```
 
-其中，一开始必须指明所基于的镜像名称，接下来一般会说明维护者的信息。后面则是镜像操作指令，例如RUN指令，RUN指令将对镜像执行跟随的命令。每运行一条RUN指令，镜像添加新的一层，并提交。最后CMD指令，指定运行容器是的操作命令。
+其中，一开始必须指明所基于的镜像名称，接下来一般会说明维护者的信息。后面则是镜像操作指令，例如RUN指令，RUN指令将对镜像执行跟随的命令。**每运行一条RUN指令，镜像添加新的一层，并提交**。最后CMD指令，指定运行容器是的操作命令。
 
 下面是两个dockerhub上的例子。
 
@@ -123,7 +123,7 @@ LABEL version="1.0"
 LABEL description="This text illustrates \that label-values can span multiple lines."
 ```
 
-可以给镜像添加多个LABEL。需要注意的是，每条LABEL指令都会生成一个新的层。最好是把添加的多个LABEL合并为一条指令：
+可以给镜像添加多个LABEL。需要注意的是，**每条LABEL指令都会生成一个新的层。最好是把添加的多个LABEL合并为一条指令**：
 
 ```shell
 LABEL multi.label1="value1" multi.label2="value2" other="value3"
@@ -137,7 +137,7 @@ LABEL multi.label1="value1" \
       other="value3"
 ```
 
-如果新添加的LABEL和已有的LABEL同名，则新值会覆盖旧值。
+如果**新添加的LABEL和已有的LABEL同名，则新值会覆盖旧值**。
 
 可以使用docker inspect命令查看镜像的LABEL信息。
 

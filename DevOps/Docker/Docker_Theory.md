@@ -114,7 +114,7 @@ manifest主要存在于registry中作为Docker镜像的元数据文件，在pull
 
 ### image & layer
 
- Docker内部的image概念时用来存储一组镜像相关的元数据信息，主要包括镜像的架构（如amd64）、镜像默认配置信息、构建镜像的容器配置信息、包含所有镜像层信息的rootfs。Docker利用rootfs中的diff_id计算出内容寻址的索引（chainID）来获取layer相关信息，进而获取每一个镜像层的文件内容。
+ Docker内部的image概念是用来存储一组镜像相关的元数据信息，主要包括镜像的架构（如amd64）、镜像默认配置信息、构建镜像的容器配置信息、包含所有镜像层信息的rootfs。Docker利用rootfs中的diff_id计算出内容寻址的索引（chainID）来获取layer相关信息，进而获取每一个镜像层的文件内容。
 
 layer是Docker用来管理镜像层的一个中间概念。之前提到，镜像由镜像层组成，而单个镜像层可能被多个镜像共享，所以Docker将layer与image的概念分离。
 

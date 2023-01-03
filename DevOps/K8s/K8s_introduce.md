@@ -50,7 +50,7 @@ Kubernetes的Node是真正运行业务负载的节点，业务负载会以Pod的
 
 创建容器所需要运行的环境，需要对存储和网络进行管理。K8s依靠Storage Plugin或者是Network Plugin来配置存储和网络。
 
-**Kube-Proxy**负责为Pod创建代理服务（<font color=' red'> *Jaly疑问：Nginx的角色？*</font>），从API Server获取所有Server信息（<font color=' red'> *Jaly疑问：这个server指的是什么？*</font>），并根据Server信息创建代理服务（<font color=' red'> *Jaly疑问：从这句话理解，这里的'server'指的是pod里运行的业务server*</font>），实现Server到Pod的请求路由和转发，从而实现K8s集群的负载均衡和服务间通讯。
+**Kube-Proxy**负责为Pod创建代理服务（<font color=' red'> *Jaly疑问：Nginx的角色？*</font>），从API Server获取所有Server信息（<font color=' red'> *Jaly疑问：这个server指的是什么？*</font>），并根据Server信息创建代理服务，实现Server到Pod的请求路由和转发，从而实现K8s集群的负载均衡和服务间通讯。
 
 ## K8s启动容器的过程
 

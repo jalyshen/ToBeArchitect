@@ -12,7 +12,7 @@ K8s中的Service和Ingress，就是介绍搭建完成K8s后，如何进行访问
 
 ## 1. Service
 
-在 K8s中，pod 是应用程序的载体，可以通过 pod 的 IP 来访问应用程序，但是 pod 是有生命周期的，一旦 pod 出现问题，pod 控制器就会将 pod 销毁并进行重新创建。那么这个时候， pod 的 IP 就会发生变化，因此利用 pod IP 访问应用程序的方式是行不通的。要解决这个问题，K8s 引入了 service 的资源概念，通过这个资源，可以整合多个 pod，提供一个统一的入口地址，通过访问 servie 的入口地址就能访问到后面 pod 的服务。
+在 K8s中，pod 是应用程序的载体，可以通过 pod 的 IP 来访问应用程序，但是 pod 是有生命周期的，一旦 pod 出现问题，pod 控制器就会将 pod 销毁并进行重新创建。那么这个时候， pod 的 IP 就会发生变化，因此利用 pod IP 访问应用程序的方式是行不通的。要解决这个问题，**K8s 引入了 service 的资源概念，通过这个资源，可以整合多个 pod，提供一个统一的入口地址，通过访问 servie 的入口地址就能访问到后面 pod 的服务**（类似有一个内部域名）。
 
 ![1](./images/Service_Ingress/1.png)
 
@@ -20,7 +20,7 @@ K8s中的Service和Ingress，就是介绍搭建完成K8s后，如何进行访问
 
 ![2](./images/Service_Ingress/2.png)
 
-这张图显示，Kube-Proxy 在这里启动了关键性的作用，每个 **Node** 节点上都运行着一个 **Kube-proxy** 服务进程，当创建 **Servcie** 的时候，会通过 api-server 向 etcd 写入创建的 service 的信息，而 kube-proxy 会基于监听的机制发现这种 Service 的变动，然后，**它会将最新的Service信息转换成对应的访问规则**。
+这张图显示，Kube-Proxy 在这里启到了关键性的作用，每个 **Node** 节点上都运行着一个 **Kube-proxy** 服务进程，当创建 **Servcie** 的时候，会通过 api-server 向 etcd 写入创建的 service 的信息，而 kube-proxy 会**基于监听的机制**发现这种 Service 的变动，然后，**它会将最新的Service信息转换成对应的访问规则**。
 
 ![3](./images/Service_Ingress/3.jpg)
 

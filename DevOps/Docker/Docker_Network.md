@@ -87,7 +87,7 @@ PING 172.17.0.2 (172.17.0.2) 56(84) bytes of data.
 
 #### 结论：
 
-​        tomcat01 和 tomcat02 是公用一个路由器，docker0
+​        tomcat01 和 tomcat02 是共用一个路由器，docker0
 
 ​        所有的容器在不指定网络的情况下，都是 docker0 路由的，docker 会给容器分配一个默认的可用ip
 
