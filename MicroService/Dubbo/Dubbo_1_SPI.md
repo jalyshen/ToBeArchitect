@@ -60,7 +60,7 @@ ServiceLoader<Driver> loadedDrivers = ServiceLoader.load(Driver.class);
 
 ### 2.3 JDK的 SPI 机制的缺点
 
-JDK 标准的 SPI 会一次性实例化扩展点所有实现，因此不管是否用到这些实现类都会加载 META-INF 中配置的所有实现类，比价耗时。
+JDK 标准的 SPI 会一次性实例化扩展点所有实现，因此不管是否用到这些实现类都会加载 META-INF 中配置的所有实现类，比较耗时。
 
 Dubbo 内核中，也使用了 SPI 机制，但是内部对SPI 的实现进行了修改来保证性能。
 
@@ -110,7 +110,7 @@ public static <T> ExtensionLoader<T> getExtensionLoader(Class<T> type) {
 }
 ```
 
-ExtensionLoader 构造函数：
+**ExtensionLoader 构造函数：**
 
 ```java
 private ExtensionLoader(Class<?> type) {
@@ -118,8 +118,95 @@ private ExtensionLoader(Class<?> type) {
     objectFactory = (type == ExtensionFactory.class ? 
                      null:                   
                     ExtensionLoader
-                     .getExtensionLoader(ExtensionFactory.class)                                                
+                     .getExtensionLoader(ExtensionFactory.class)
                      .getAdaptiveExtension());
+}
+```
+
+ExtensionLoader内部存放了type，即Container接口名字，与objectFactory即在ExtensionFactory，后续可以通过extensionFactory获取Container接口的实现。
+
+ExtensionLoader.getExtensionLoader(Class<T> type) 执行完毕，就表示Container接口的ExtensionLoader被创建了出来并被放置在了缓存中，并且ExtensionLoader内部完成了type和extensionFactory属性的初始化。
+
+**ExtensionFactory的作用**
+
+可以通过getExtension为doubbo的IoC提供所有对象，并且ExtensionFactory的objectFactory为null。
+
+#### 3.2.2 getAdaptiveExtension获取扩展装饰类对象 ####
+
+被 @Adaptive注释修饰的类就是扩展装饰类，点开注释后可以看到 @Adaptive注释只能修饰类和方法。
+
+```java
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+public @interface Adaptive {}
+```
+
+阅读getAdaptiveExtension源码：
+
+```java
+public T getAdaptiveExtension() {
+    Object instance = cacheAdaptiveInstance.get();
+    if (instance == null) {
+        if (createAdaptiveInstanceError == null) {
+            synchronized(cacheAdaptiveInstance) {
+                instance = cachedAdaptiveInstance.get();
+                if (instance == null) {
+                    try {
+                    }catch(Throwable t) {
+                        createAdaptiveInstanceError = t;
+                        throw new IllegalStateException("fail to create adaptive instance:" + t.toString(), t);
+                    }
+                }
+            }
+        } else {
+            throw new IllegalStateException("fail to create adaptive instance:" + createAdaptiveInstanceError.toString(), createAdaptiveInstanceError);
+        }
+    }
+    return (T)instance;
+}
+```
+
+上面代码主要为从缓存中获取adaptiveextension，如果不存在则创建，创建成功后再放到缓存中。
+
+**createAdaptiveExtension：**
+
+```java
+private T createAdaptiveExtension() {
+    try {
+        return injectExtension((T)getAdaptiveExtensionClass().newInstance());
+    }catch(Exception e) {
+        throw new IllegalStateException("Can not create adaptive extension");
+    }
+}
+```
+
+**getAdaptiveExtensionClass**
+
+```
+private Class<?> getAdaptiveExtensionClass() {
+	getExtensionClasses();
+	if (cachedAdaptiveClass != null) {
+		return cachedAdaptiveClass;
+	}
+	return cachedAdaptiveClass = createAdativeExtensionClass();
+}
+```
+
+第一步：getExtensionClasses中会加载SPI中的实现类：
+
+```java
+private Map<String, Class<?>> loadExtensionClasses() {
+    // ...
+    // 加载META-INF/double/insternal/接口名， SPI文件中的实现类
+    // loadDirectory(extensionClasses, DUBBO_INTERNAL_DIRECTORY, type.getName());
+    return extensionClasses;
+}
+```
+
+```java
+private void loadClass(Map<String, Class<?>> extensionClasses, java.net.URL resourceURL, Class<?> clazz, String name) throws NoSuchMethodException {
+    
 }
 ```
 
