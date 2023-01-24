@@ -38,15 +38,15 @@ MQTT 协议是工作在低带宽、不可靠的网络的远程传感器和控制
 
 3. 使用TCP/IP提供网络连接
 
-    主流的MQTT是基于TCP连接进行数据推送的，但是同样有基于UDP版本，叫做 MQTT-SN。这两种版本由于基于不同的连接方式，优缺点自然也各有不同
+    主流的MQTT是基于TCP连接进行数据推送的，但是**同样有基于UDP版本，叫做 MQTT-SN**。这两种版本由于基于不同的连接方式，优缺点自然也各有不同
 
-4. 有三种消息发布服务质量
+4. 有三种消息发布服务质量（QoS，Quality of Service Level）
 
     * ”至多一次“：消息发布完全依赖底层 TCP/IP 网络。会发生消息丢失或者重复。这一级别可用于如下情况：环境传感器数据，丢失一次读记录无所谓，因为不久后还会有第二次发送。这种方式主要用于普通App的推送，倘若智能设备在消息推送时未联网，推送过去没有收到，再次联网也就收不到了。
     * ”至少一次“：确保消息到达，但消息重复可能会发送
     * ”只有一次“：确保消息到达一次。在一些要求比较严格的计费系统中，可以使用此级别。在计费系统中，消息重复或丢失会导致不正确的结果。这种最高质量的消息发布服务还可以用于即时通讯类的App的推送，确保用户收到且只会收到一次。
 
-5. 小型传输，开销很小（固定长度的头部是2字节），协议交换最小化，以降低网络流量
+5. 小型传输，开销很小（**固定长度的头部是2字节**），协议交换最小化，以降低网络流量
 
     这就是为什么在介绍里说它非常适合”在物联网领域，传感器与服务器的通信，信息的收集“，要知道嵌入式设备的运算能力和带宽相对薄弱，使用这种协议来传递消息再合适不过了。
 
@@ -138,6 +138,25 @@ MQTT协议中定义了一些方法（也被称为动作），来于表示对确�
 
 相当于一个4位的无符号值，类型、取值及描述如下：
 
+| **Name**    | **Value** | **Direction of flow**                   | **Description**                            |
+| ----------- | --------- | --------------------------------------- | ------------------------------------------ |
+| Reserved    | 0         | Forbidden                               | Reserved                                   |
+| CONNECT     | 1         | Client to Server                        | Client request to connect to Server        |
+| CONNACK     | 2         | Server to Client                        | Connect acknowledgment                     |
+| PUBLISH     | 3         | Client to Server     orServer to Client | Publish message                            |
+| PUBACK      | 4         | Client to Server     orServer to Client | Publish acknowledgment                     |
+| PUBREC      | 5         | Client to Server     orServer to Client | Publish received (assured delivery part 1) |
+| PUBREL      | 6         | Client to Server     orServer to Client | Publish release (assured delivery part 2)  |
+| PUBCOMP     | 7         | Client to Server     orServer to Client | Publish complete (assured delivery part 3) |
+| SUBSCRIBE   | 8         | Client to Server                        | Client subscribe request                   |
+| SUBACK      | 9         | Server to Client                        | Subscribe acknowledgment                   |
+| UNSUBSCRIBE | 10        | Client to Server                        | Unsubscribe request                        |
+| UNSUBACK    | 11        | Server to Client                        | Unsubscribe acknowledgment                 |
+| PINGREQ     | 12        | Client to Server                        | PING request                               |
+| PINGRESP    | 13        | Server to Client                        | PING response                              |
+| DISCONNECT  | 14        | Client to Server                        | Client is disconnecting                    |
+| Reserved    | 15        | Forbidden                               | Reserved                                   |
+
 #### 5.1.2 标识位
 
 位置：byte 1 中的 bits 3 -- 0
@@ -151,6 +170,31 @@ MQTT协议中定义了一些方法（也被称为动作），来于表示对确�
     * 010：一次，即： =1
     * 011：预留
 3. RETAIN：发布保留标识，表示服务器要保留这次推送的信息，如果有新的订阅者出现，就把这消息推送给它；如果没有那么推送至当前订阅者后释放。
+
+| **Control Packet** | **Fixed header flags** | **Bit 3** | **Bit 2** | **Bit 1** | **Bit 0** |
+| ------------------ | ---------------------- | --------- | --------- | --------- | --------- |
+| CONNECT            | Reserved               | 0         | 0         | 0         | 0         |
+| CONNACK            | Reserved               | 0         | 0         | 0         | 0         |
+| PUBLISH            | Used in MQTT 3.1.1     | DUP1      | QoS2      | QoS2      | RETAIN3   |
+| PUBACK             | Reserved               | 0         | 0         | 0         | 0         |
+| PUBREC             | Reserved               | 0         | 0         | 0         | 0         |
+| PUBREL             | Reserved               | 0         | 0         | 1         | 0         |
+| PUBCOMP            | Reserved               | 0         | 0         | 0         | 0         |
+| SUBSCRIBE          | Reserved               | 0         | 0         | 1         | 0         |
+| SUBACK             | Reserved               | 0         | 0         | 0         | 0         |
+| UNSUBSCRIBE        | Reserved               | 0         | 0         | 1         | 0         |
+| UNSUBACK           | Reserved               | 0         | 0         | 0         | 0         |
+| PINGREQ            | Reserved               | 0         | 0         | 0         | 0         |
+| PINGRESP           | Reserved               | 0         | 0         | 0         | 0         |
+| DISCONNECT         | Reserved               | 0         | 0         | 0         | 0         |
+
+ 
+
+DUP1    = Duplicate delivery of a PUBLISH Control Packet
+
+QoS2    = PUBLISH Quality of Service
+
+RETAIN3 = PUBLISH Retain flag 
 
 #### 5.1.3  剩余长度（Remaining Length)
 

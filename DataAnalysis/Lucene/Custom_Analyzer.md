@@ -106,7 +106,7 @@ public static final class TokenStreamComponents {
 
 
 
-根据上面的代码，Lucene提供客户自定义分词器的模式大致如夏：
+根据上面的代码，Lucene提供客户自定义分词器的模式大致如下：
 
 1. 通过overwrite Analyzer的createComponents(String var1)，构造一个TokenStreamComponents实例。而要实例化一个TokenStreamComponents实例，就需要一个TokenStream实例。
 2. 显然，Analyzer并不是真正编写分词器的地方，而是TokenStream。
