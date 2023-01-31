@@ -12,7 +12,7 @@ ConcurrentHashMap 是一个存储 Kev/Value 对的容器，并且是线程安全
 
 ![1](./images/ConcurrentHashMap/1.webp)
 
-虽然 ConcurrentHashMap 的底层数据机构、方法的实现细节，与 HashMap 大体一致，但两者在**类结构**没有任何关联。下面是 ConcurrentHashMap 的类关系图：
+虽然 ConcurrentHashMap 的底层数据结构、方法的实现细节，与 HashMap 大体一致，但两者在**类结构**没有任何关联。下面是 ConcurrentHashMap 的类关系图：
 
 ![2](./images/ConcurrentHashMap/2.webp)
 
