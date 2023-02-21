@@ -160,3 +160,125 @@ Spring AOP 的存在，帮助少写很多的业务无关而又冗余的代码。
 
    postProcessBeforeInitialization -> afterPropertiesSet ->initMethod
 
+4. applyBeanPostProcessorsAfterInitialization，真正调用后置处理的postProcessAfterInitalization，并且userService变为了代理对象
+
+### 2.3beanPostProcessors
+
+![4](./images/Spring_AOP/4.png)
+
+只有第三个和动态代理有关系。
+
+org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator#postProcessAfterInitialization—>createProxy，进行代理工厂的组装。
+
+```java
+protected Object createProxy(
+      Class<?> beanClass, String beanName, Object[] specificInterceptors, TargetSource targetSource) {
+   //...
+   ProxyFactory proxyFactory = new ProxyFactory();
+   proxyFactory.copyFrom(this);
+   if (!proxyFactory.isProxyTargetClass()) {
+      if (shouldProxyTargetClass(beanClass, beanName)) {
+         proxyFactory.setProxyTargetClass(true);
+      }
+      else {
+         evaluateProxyInterfaces(beanClass, proxyFactory);
+      }
+   }
+
+   Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);
+   proxyFactory.addAdvisors(advisors);
+   proxyFactory.setTargetSource(targetSource);
+   customizeProxyFactory(proxyFactory);
+   proxyFactory.setFrozen(this.freezeProxy);
+   if (advisorsPreFiltered()) {
+      proxyFactory.setPreFiltered(true);
+   }
+   //代理方法执行的核心方法
+   return proxyFactory.getProxy(getProxyClassLoader());
+}
+```
+
+## 三. 代理方法执行的核心方法
+
+```java
+public Object getProxy(ClassLoader classLoader) {
+   return createAopProxy().getProxy(classLoader);
+}
+```
+
+### 3.1 createAopProxy
+
+```java
+@Override
+public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException {
+   if (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) {
+      Class<?> targetClass = config.getTargetClass();
+      if (targetClass == null) {
+         throw new AopConfigException("TargetSource cannot determine target class: " +
+               "Either an interface or a target is required for proxy creation.");
+      }
+      if (targetClass.isInterface() || Proxy.isProxyClass(targetClass)) {
+         return new JdkDynamicAopProxy(config);
+      }
+      return new ObjenesisCglibAopProxy(config);
+   }
+   else {
+      return new JdkDynamicAopProxy(config);
+   }
+}
+```
+
+上图所示的代码其实就是spring aop中选择动态代理的核心方法。**主要思想其实为，如果代理类为接口，就使用JDK动态代理。如果不为接口，就使用CGLIB动态代理**。
+
+上图中的config.isOptimize和conifg.isProxyTargetClass，如果当你没有进行配置的话，就读取的是spring的默认配置，具体的配置信息：
+
+```java
+public @interface EnableAspectJAutoProxy {
+
+   /**
+    * Indicate whether subclass-based (CGLIB) proxies are to be created as opposed
+    * to standard Java interface-based proxies. The default is {@code false}.
+    */
+   boolean proxyTargetClass() default false;
+   /**
+    * Indicate that the proxy should be exposed by the AOP framework as a {@code ThreadLocal}
+    * for retrieval via the {@link org.springframework.aop.framework.AopContext} class.
+    * Off by default, i.e. no guarantees that {@code AopContext} access will work.
+    * @since 4.3.1
+    */
+   boolean exposeProxy() default false;
+}
+```
+
+根据spring中的注释可以得出，默认采用的是JDK动态代理。
+
+### 3.2 使代理类变成 CGLIB 动态代理类
+
+只需要将UserServiceImpl的接口去掉即可，修改后代码如下：
+
+```java
+@Service("userServiceImpl")
+public class UserServiceImpl {
+    public void login() throws InterruptedException {
+        System.out.println("用户登录执行开始");
+        Thread.sleep(2000);
+        System.out.println("用户登录执行结束");
+    }
+}
+```
+
+至于cglib和jdk动态代理的具体执行过程，放到下一篇动态代理中，单独来进行分析。
+
+## 四. AOP通知
+
+aop中的通知（即代理加强方法）加上上述示例中的环绕通知，共有五种通知。
+
+·  @Before：前置通知，在方法执行之前执行。
+
+·  @After：后置通知，在方法执行之后执行。
+
+·  @AfterRunning：返回通知，在方法返回结果之后执行。
+
+·  @AfterThrowing：异常通知，在方法执行出现异常之后执行。
+
+·  @Around：环绕通知，方法执行前与执行后执行。
