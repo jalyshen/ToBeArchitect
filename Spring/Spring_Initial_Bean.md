@@ -10,7 +10,7 @@
 
    ```java
    @ComponentScan("com.ywl.leetcode")
-   public class AppCofig {
+   public class AppConfig {
    }
    ```
 

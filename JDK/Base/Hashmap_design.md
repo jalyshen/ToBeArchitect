@@ -114,7 +114,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
 
 #### 2.2.1 
 
-在 put 一个 *k-v* 时，首先调用 *hash()* 方法来计算 key 的 hashCode，而在 hashmap 中并不是简单的调用 key 的 hashCode 求出一个哈希码，还用到了扰动函数来降低哈希冲突。源码如下：
+在 put 一个 *k-v* 时，首先调用 *hash()* 方法来计算 key 的 hashCode，而在 hashmap 中并不是简单的调用 key 的 hashCode 求出一个哈希码，还用到了**扰动函数**来**降低哈希冲突**。源码如下：
 
 ```java
 static final int hash(Object key) {
@@ -123,7 +123,7 @@ static final int hash(Object key) {
 }
 ```
 
-从源码中可以看到，最终的哈希值是将原哈希码和原哈希码右移16位得到的值进行异或运算的结果。16正好是32的一半，因此 hashmap 是将 hashcode 的高位移动到了低位，再通过异或运算将高位散播到低位，从而降低哈希冲突。
+从源码中可以看到，最终的哈希值是将**原哈希码和原哈希码右移16位得到的值进行异或运算的结果**。16正好是32的一半，因此 hashmap 是将 hashcode 的高位移动到了低位，再通过异或运算将高位散播到低位，从而降低哈希冲突。
 
 至于为什么要降低冲突呢？可以看看源码中的注释：
 
