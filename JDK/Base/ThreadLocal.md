@@ -213,13 +213,13 @@ ThreadLocalMap 作为 ThreadLoacl 的一个静态内部类，里面定义了 Ent
         }
 ```
 
-注释说的清洗，*Note that null keys (i.e.  entry.get() == null)*， 如果 *key threadlocal* 为 null了，这个 entry 就可以清除了。 ThreadLocal 是一个弱引用，当为 null 时， 会被当成垃圾回收。
+注释说的清晰，*Note that null keys (i.e.  entry.get() == null)*， 如果 *key threadlocal* 为 null了，这个 entry 就可以清除了。 ThreadLocal 是一个弱引用，当为 null 时， 会被当成垃圾回收。
 
  ![1](.\images\ThreadLocal\1.jpg)
 
 重点来了，突然 ThreadLocal 是 null 了，也就是要被垃圾回收器回收了，但是此时 ThreadLocalMap（thread 的内部属性）生命周期和 Thread 的一样，它不会回收，这个时候就出现了一个现象，那就是 ThreadLocalMap 的 Key 没了，但是对应的 value 还在，从而造成了内存泄漏。
 
-**解决办法**：使用完 TreadLocal 后，执行 remove 操作，避免出现内存溢出情况。
+**解决办法**：<font color='red'>使用完 TreadLocal 后，执行 remove 操作，避免出现内存溢出情况。</font>
 
 所以，如同 lock 的操作，最后要执行解锁操作一样， ThreadLocal 使用完毕一定要记得执行 remove 方法，清除当前线程的数值。如果不 remove 当前线程对应的 Value， 就会一直存在这个值。
 
