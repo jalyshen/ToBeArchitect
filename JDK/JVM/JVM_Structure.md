@@ -119,7 +119,7 @@ public class MethodAreaDemo1 {
 * 方法参数的数量和类型（按顺序）
 * 方法的修饰符（public、private、protected、static、final、synchronized、native、abstract的一个子集）
 * 方法的字节码（bytecodes）、操作数栈、局部变量表以及大小（abstract 和 native 方法除外）
-* 异常表（abstract 和 natvie 方法除外）每个异常处理的开始位置、结束位置、代码处理在程序计数器中的偏移地址、被捕获的异常类的常量池索引
+* 异常表（abstract 和 native 方法除外）每个异常处理的开始位置、结束位置、代码处理在程序计数器中的偏移地址、被捕获的异常类的常量池索引
 
 ### 6.4 non-final 的类信息
 
