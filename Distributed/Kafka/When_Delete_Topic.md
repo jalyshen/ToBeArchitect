@@ -63,7 +63,11 @@ DeletionClient 接口目前只有一个实现类 ControllerDeletionClient，构�
 
 #### mutePartitionModifications
 
+屏蔽主题分区数据变更监听：取消/brokers/topics/节点数据变更的监听。
 
+当该主题的分区数据发生变更后，由于对应ZK监听器已被取消，因此不会触发Controller相应处理逻辑。
+
+为何取消该监听器？为了避免操作相互干扰：假设用户A发起主题删除，同时用户B为这个主题新增分区。此时，这两个操作就会冲突，若允许Controller同时处理这两个操作，势必会造成逻辑混乱及状态不一致。为应对这种情况，在移除主题副本和分区对象前，代码要先执行这个方法，确保不再响应用户对该主题的其他操作。
 
 #### sendMetadataUpdate
 
