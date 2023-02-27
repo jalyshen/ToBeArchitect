@@ -90,7 +90,7 @@ public class RAMQuartz {
 		
 		//====================================
 		// 3.创建JobDetail
-    //====================================
+        //====================================
 		JobDetail jb = JobBuilder.newJob(RAMJob.class)
 				.withDescription("this is a ram job") //job的描述
 				.withIdentity("ramJob", "ramGroup") //job 的name和group
@@ -100,10 +100,10 @@ public class RAMQuartz {
 		long time=  System.currentTimeMillis() + 3*1000L; //3秒后启动任务
 		Date statTime = new Date(time);
 		
-    //==================================================
+        //==================================================
 		// 4.创建Trigger
 		//   使用SimpleScheduleBuilder或者CronScheduleBuilder
-    //==================================================
+        //==================================================
 		Trigger t = TriggerBuilder.newTrigger()
 					.withDescription("")
 					.withIdentity("ramTrigger", "ramTriggerGroup")
@@ -112,15 +112,15 @@ public class RAMQuartz {
 					.withSchedule(CronScheduleBuilder.cronSchedule("0/2 * * * * ?")) //两秒执行一次
 					.build();
 		
-    //================================================
+        //================================================
 		// 5.注册任务和定时器
-    //   关联上业务逻辑（job）和定时逻辑（trigger）
-    //================================================
+        //   关联上业务逻辑（job）和定时逻辑（trigger）
+        //================================================
 		scheduler.scheduleJob(jb, t);
 		
-    //====================================
+        //====================================
 		// 6.启动 调度器
-    //====================================
+        //====================================
 		scheduler.start();
 		_log.info("启动时间 ： " + new Date());
 			
@@ -214,39 +214,39 @@ public class QuartzJdbcTest {
 	 */
 	public static void startSchedule() {
 		try {
-      //==================================================
+            //==================================================
 			// 1、创建一个JobDetail实例，指定Quartz
-      //==================================================
+            //==================================================
 			JobDetail jobDetail = JobBuilder.newJob(MyJob.class) // 任务执行类
 					.withIdentity("job1_1", "jGroup1")               // 任务名，任务组 
 					.build();
 			
-      //==================================================
+            //==================================================
 			// 触发器类型
-      //==================================================
+            //==================================================
 			SimpleScheduleBuilder builder = 
              SimpleScheduleBuilder.repeatSecondlyForTotalCount(5); // 设置执行次数
 			
-      // 也可以选择Cron的方式
+            // 也可以选择Cron的方式
 			//CronScheduleBuilder builder = CronScheduleBuilder.cronSchedule("0/2 * * * * ?");
       
-      //==================================================
+            //==================================================
 			// 2、创建Trigger
-      //==================================================
+            //==================================================
 			Trigger trigger = TriggerBuilder.newTrigger()
 					.withIdentity("trigger1_1", "tGroup1").startNow()
 					.withSchedule(builder)
 					.build();
 			
-      //==================================================
+            //==================================================
 			// 3、创建Scheduler
-      //==================================================
+            //==================================================
 			Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
 			scheduler.start();
       
-      //==================================================
+            //==================================================
 			// 4、调度执行
-      //==================================================
+            //==================================================
 			scheduler.scheduleJob(jobDetail, trigger);
 			try {
 				Thread.sleep(60000);
@@ -254,9 +254,9 @@ public class QuartzJdbcTest {
 				e.printStackTrace();
 			}
 
-      //==================================================
+            //==================================================
 			// 关闭调度器
-      //==================================================
+            //==================================================
 			scheduler.shutdown();
 
 		} catch (SchedulerException e) {
@@ -273,7 +273,8 @@ public class QuartzJdbcTest {
 			Scheduler scheduler = schedulerFactory.getScheduler();
 			JobKey jobKey = new JobKey("job1_1", "jGroup1");
 			List<? extends Trigger> triggers = scheduler.getTriggersOfJob(jobKey);
-			//SELECT TRIGGER_NAME, TRIGGER_GROUP FROM {0}TRIGGERS WHERE SCHED_NAME = {1} AND JOB_NAME = ? AND JOB_GROUP = ?
+			// SELECT TRIGGER_NAME, TRIGGER_GROUP 
+            // FROM {0}TRIGGERS WHERE SCHED_NAME = {1} AND JOB_NAME = ? AND JOB_GROUP = ?
 			// 重新恢复在jGroup1组中，名为job1_1的 job的触发器运行
 			if(triggers.size() > 0){
 				for (Trigger tg : triggers) {
