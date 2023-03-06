@@ -26,15 +26,15 @@ Nacos作为注册中心是为了更好更方便的管理应用中的每一个服
 
 1. ZooKeeper：
 
-   用过或者了解过ZK做注册中心的人都知道，ZK集群下一旦Leader节点宕机了，在短时间内服务都不可通讯，因为它们在一定时间内 follower 进行选举来推出新的 Leader 节点。这段时间内，所有的服务通信将受到影响，而且 Leader 选取时间比较长，需要花费几十秒甚至上百秒的时间。因此，可以理解为ZK是以CP为主的。
+   用过或者了解过ZK做注册中心的人都知道，ZK集群下一旦Leader节点宕机了，在短时间内服务都不可通讯，因为它们在一定时间内 follower 进行选举来推出新的 Leader 节点。这段时间内，所有的服务通信将受到影响，而且 Leader 选取时间比较长，需要花费几十秒甚至上百秒的时间。因此，**可以理解为ZK是以CP为主的**。
 
 2. Eureka：
 
-   Eureka集群下每个节点之间都会定时发送心跳，定时同步数据，没有master/slave之分，是一个完全去中心化的架构。因此每个注册到 Eureka 下的实例都会定时同步IP，服务之间的调用也是根据 Eureka 拿到的缓存服务数据进行调用。若一台 Eureka 服务宕机，其他 Eureka 在一定时间内未感知到这台 Eureka 服务宕机，各个服务之间还是可以正常调用。Eureka 的集群中，只要有一台 Eureka 还在，就能保证注册服务可用（保证可用性），只不过查到的信息可能不是最新的（不保证强一致性）。当数据出现不一致时，虽然A、B上的注册信息不完全相同，但是每个Eureka节点依然能够正常对外提供服务，这会出现查询服务信息时如果请求A查不到，但是请求B可以查到的情况。如此保证了可用性但是牺牲了一致性。
+   **Eureka集群**下每个节点之间都会定时发送心跳，定时同步数据，没有master/slave之分，**是一个完全去中心化的架构**。因此每个注册到 Eureka 下的实例都会定时同步IP，服务之间的调用也是根据 Eureka 拿到的缓存服务数据进行调用。若一台 Eureka 服务宕机，其他 Eureka 在一定时间内未感知到这台 Eureka 服务宕机，各个服务之间还是可以正常调用。Eureka 的集群中，只要有一台 Eureka 还在，就能保证注册服务可用（保证可用性），只不过查到的信息可能不是最新的（不保证强一致性）。当数据出现不一致时，虽然A、B上的注册信息不完全相同，但是每个Eureka节点依然能够正常对外提供服务，这会出现查询服务信息时如果请求A查不到，但是请求B可以查到的情况。如此保证了可用性但是牺牲了一致性。
 
 3. Nacos：
 
-   同时支持CP和AP架构。根据服务注册选择临时和永久决定采用AP模式还是CP模式。如果注册Nacos的Client节点注册时ephemeral=true，那么Nacos集群对这个Client节点的效果就是AP，采用distro协议实现；而注册Nacos的Client节点注册时ephemeral=false，那么Nacos集群对这个节点的效果是CP模式，采用raft协议实现。
+   **同时支持CP和AP架构**。根据服务注册选择临时和永久决定采用AP模式还是CP模式。如果注册Nacos的Client节点注册时**ephemeral=true**，那么Nacos集群对这个Client节点的效果就是AP，**采用distro协议实现**；而注册Nacos的Client节点注册时**ephemeral=false**，那么Nacos集群对这个节点的效果是CP模式，**采用raft协议实现**。
 
 这篇文章深入研究一下Nacos基于AP架构微服务注册原理。
 
@@ -42,9 +42,9 @@ Nacos作为注册中心是为了更好更方便的管理应用中的每一个服
 
 1. 微服务在启动时将自己的服务注册到Nacos注册中心，同时发布http接口供其他系统调用，一般都是基于 SpringMVC
 
-2. 服务消费者基于Feign调用服务提供者对外发布的接口，先对调用的本地接口加上注释 @FeignClient，Feign会针对加了该注释的接口生成动态代理，服务消费者针对Feign生成的动态代理去调用方法时，会在底层生成HTTP协议格式的请求，类似 /stock/deduclt?productId=100
+2. 服务消费者基于Feign调用服务提供者对外发布的接口，先对调用的本地接口加上注释 @FeignClient，**Feign会针对加了该注释的接口生成动态代理**，服务消费者针对Feign生成的动态代理去调用方法时，会在底层生成HTTP协议格式的请求，类似 /stock/deduclt?productId=100
 
-3. Feign最终会调用Ribbon从本地的Nacos注册表的缓存里根据服务名取出服务提供者机器的列表，然后进行负载均衡并选择一台机器出来，对选出来的机器IP和端口拼接之前生成的URL请求，生成调用的HTTP接口地址。
+3. **Feign最终会调用Ribbon从本地的Nacos注册表的缓存里根据服务名取出服务提供者机器的列表**，然后进行负载均衡并选择一台机器出来，对选出来的机器IP和端口拼接之前生成的URL请求，生成调用的HTTP接口地址。
 
    ![](./images/Principle_Of_Registration/1.jpeg)
 
@@ -54,7 +54,7 @@ Nacos作为注册中心是为了更好更方便的管理应用中的每一个服
 
 1. **服务注册：**
 
-   Nacos Client 会通过发送REST请求的方式向Nacos Server注册自己的服务，提供自身的元数据，比如IP地址、端口号等信息。Nacos Server接收到注册请求后，就会把这些元数据信息存储在一个双层的内存Map中
+   Nacos Client 会通过发送**REST请求**的方式向Nacos Server注册自己的服务，提供自身的元数据，比如IP地址、端口号等信息。Nacos Server接收到注册请求后，就会把这些元数据信息存储在一个双层的内存Map中
 
 2. **服务心跳：**
 
@@ -66,7 +66,7 @@ Nacos作为注册中心是为了更好更方便的管理应用中的每一个服
 
 4. **服务发现：**
 
-   服务消费者（Nacos Client）在调用服务提供者的服务时，会发送一个REST请求给Nacos Server，获取上面注册的服务清单，并且缓存在Nacos Client本地，同时会在Nacos Client本地开启一个定时任务定时拉取服务端最新的注册表信息更新到本地缓存
+   服务消费者（Nacos Client）在调用服务提供者的服务时，会发送一个REST请求给Nacos Server，获取上面注册的服务清单，并且缓存在Nacos Client本地，同时会在**Nacos Client本地开启一个定时任务定时拉取服务端最新的注册表信息更新到本地缓存**
 
 5. **服务同步：**
 
@@ -74,7 +74,7 @@ Nacos作为注册中心是为了更好更方便的管理应用中的每一个服
 
 ### Nacos源码分析 ###
 
-看Nacos源码不难发现，Nacos实际上就是一个基于Sprig Boot的Web应用，不管是服务注册还是发送心跳都是通过给Nacos服务端发送Http请求实现的。
+看Nacos源码不难发现，**Nacos实际上就是一个基于Sprig Boot的Web应用**，不管是服务注册还是发送心跳都是通过给Nacos服务端发送Http请求实现的。
 
 #### Nacos客户段注册 ####
 
@@ -287,7 +287,7 @@ NacosServiceRegistryAutoConfiguration将NacosServiceRegistry注入进来，通�
 
 ### Nacos 服务发现 ###
 
-#### 1. Nacos客户段服务发现 ####
+#### 1. Nacos客户端服务发现 ####
 
 当Nacos服务端启动后，会先从本地缓存的 serviceInfoMap中获取服务实例信息，获取不到则通过NamingProxy调用Nacos服务端获取服务实例信息，最后开启定时任务每秒请求服务端获取实例信息列表进而更新本地缓存serviceInfoMap，服务发现拉取实例信息流程如下：
 
@@ -296,7 +296,7 @@ NacosServiceRegistryAutoConfiguration将NacosServiceRegistry注入进来，通�
 服务发现源码如下：
 
 ```java
-/**
+    /**
      * 客户端服务发现
      *
      * @param serviceName name of service
@@ -330,7 +330,7 @@ NacosServiceRegistryAutoConfiguration将NacosServiceRegistry注入进来，通�
 ```
 
 ```java
-/**
+    /**
      * 客户端从注册中心拉取注册列表
      *
      * @param serviceName
@@ -386,7 +386,7 @@ NacosServiceRegistryAutoConfiguration将NacosServiceRegistry注入进来，通�
         return serviceInfoMap.get(serviceObj.getKey());
     }
         
-        //异步拉取任务
+    //异步拉取任务
     public void scheduleUpdateIfAbsent(String serviceName, String clusters) {
         if (futureMap.get(ServiceInfo.getKey(serviceName, clusters)) != null) {
             return;

@@ -181,7 +181,7 @@ private T createAdaptiveExtension() {
 }
 ```
 
-**getAdaptiveExtensionClass**
+**(1) getAdaptiveExtensionClass**
 
 ```
 private Class<?> getAdaptiveExtensionClass() {
@@ -206,7 +206,132 @@ private Map<String, Class<?>> loadExtensionClasses() {
 
 ```java
 private void loadClass(Map<String, Class<?>> extensionClasses, java.net.URL resourceURL, Class<?> clazz, String name) throws NoSuchMethodException {
+        //...    //SPI实现类 是否包含adaptive注解    
+    if (clazz.isAnnotationPresent(Adaptive.class)) {
+        if (cachedAdaptiveClass == null) { //对cachedAdaptiveClass赋值            
+            cachedAdaptiveClass = clazz;
+            //...   
+        //构造函数中是否包含目标接口    
+        } else if (isWrapperClass(clazz)) {
+            Set<Class<?>> wrappers = cachedWrapperClasses;
+            if (wrappers == null) {
+                cachedWrapperClasses = new ConcurrentHashSet<Class<?>>();
+                wrappers = cachedWrapperClasses;
+            }        
+            //存在这样的实现类则放到wrappers中
+            wrappers.add(clazz);
+    } else {
+        //...
+        if (names != null && names.length > 0) {            
+            //包含activate注解的实现类存放在cachedActiviates中            
+            Activate activate = clazz.getAnnotation(Activate.class);
+            if (activate != null) {
+                cachedActivates.put(names[0], activate);
+            } else {
+                com.alibaba.dubbo.common.extension.Activate oldActivate = clazz.getAnnotation(com.alibaba.dubbo.common.extension.Activate.class);
+                if (oldActivate != null) {
+                    cachedActivates.put(names[0], oldActivate);
+                }
+            }
+            for (String n : names) {                
+                //剩余的类就放在cachedNames                
+                if (!cachedNames.containsKey(clazz)) {
+                    cachedNames.put(clazz, n);
+                }
+                //...
+            }
+        }
+    }
+}
+```
+
+上述源码中会加载type-目标接口位于META-INF/dubbo/internal/接口名下的SPI实现类，并会根据对应策略将实现内容放在不同的缓存变量中。
+
+如果实现类中包含了adapive注解修饰的类，则会把该目标接口放到cachedAdaptiveClass中，例如ExtensionFactory。
+
+如果实现类中的构造函数中包含了目标接口，则会将实现类放到cachedWrapperClasses集合中。
+
+如果实现类类中包含了activate注解修饰的类，则会把实现类放到cachedActivates中。
+
+剩余其他的类，则放在cachedNames中。
+
+```java
+private Class<?> getAdaptiveExtensionClass() {    
+    //加载目标接口的SPI实现类
+    getExtensionClasses();
+    if (cachedAdaptiveClass != null) {        
+        //cachedAdaptiveClass在加载时被赋值了则直接返回        
+        return cachedAdaptiveClass;
+    }    
+    //否则创建
+    return cachedAdaptiveClass = createAdaptiveExtensionClass();
+}
+```
+
+**(2) createAdaptiveExtensionClass**
+
+生成一个动态的adaptive类。
+
+```java
+private Class<?> createAdaptiveExtensionClass() {
+    String code = createAdaptiveExtensionClassCode();
+    ClassLoader classLoader = findClassLoader();
+    org.apache.dubbo.common.compiler.Compiler compiler= ExtensionLoader.getExtensionLoader(Compiler.class).getAdaptiveExtension();
+    return compiler.compile(code, classLoader);
+}
+```
+
+ 这里和动态代理有点相似，生成了一个动态的adaptive类。类名则为<目标接口名>$Adaptive implements <目标接口>。
+
+动态类中的方法，只有方法被@Adaptive修饰的方法才会实现。没有被修饰的方法则无法实现。
+
+**injectExtension**
+
+```java
+private T injectExtension(T instance) {
+    //...
+    Object object = objectFactory.getExtension(pt, property); 
+    //...
+    return instance;
+}
+```
+
+在injectExtension中进行dubbo的IOC，本质上就是从spi和spring中获取对象进行赋。
+
+ SpiExtensionFactory.getExtension和SpringExtensionFactory.getExtension。
+
+**@Adaptive注解总结**
+
+官方文档中解释为：Adaptive可注解在类或方法上。当注解在类上时，dubbo不会为该类生成代理类，表示扩展的加载逻辑由人工编码完成。当注解在方法上时，dubbo会为该方法生成代理逻辑，表示拓展的加载逻辑需由框架自动生成。
+
+（1）注解在接口上
+
+​    在调用getAdaptiveExtension方法时，直接返回该类，然后执行IOC。
+
+（2）注解在方法上
+
+​    在调用getAdaptiveExtension方法时，会生成代理类，然后执行IOC。代码模板如下：
+
+```java
+package <扩展点接口所在包>;
+
+public class <扩展点接口名>$Adpative implements <扩展点接口> {
+    public <有@Adaptive注解的接口方法>(<方法参数>) {
+        if () 
+        else if ()
+        <else >
+            
+        if () {
+            throw new IllegalArgumnetException("url== null");
+        }
+        
+        // ... 获取扩展点
+        <> exntends ()
+    }
     
+    public <>() {
+        
+    }
 }
 ```
 
