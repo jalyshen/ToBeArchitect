@@ -65,11 +65,11 @@ private final Map<String, ObjectFactory<?>> singletonFactories =
 
 这三级缓存分别指：
 
-* singletonObjects：单例对象的cache                                 -- 一级缓存
+* singletonObjects：单例对象的cache                                      -- 一级缓存
 
 * earlySingletonObjects ：提前曝光的单例对象的Cache   -- 二级缓存
 
-* singletonFactories ： 单例对象工厂的cache                     -- 三级缓存
+* singletonFactories ： 单例对象工厂的cache                       -- 三级缓存
 
 在创建bean的时候，首先想到的是从cache中获取这个单例的bean，这个缓存就是singletonObjects。主要调用方法就是：
 

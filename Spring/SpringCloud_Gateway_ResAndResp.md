@@ -10,7 +10,7 @@
 
 ![1](./images/SpringCloud_Gateway_ResAndResp/1.jpeg)
 
-其次是修改相应，如下图，服务提供方provider-hello的原始响应只有response-tag字段，经过网关时被塞入了gateway-response-tag字段，最终浏览器收到的响应就是response-tag和gateway-response-tag两个字段：
+其次是修改响应，如下图，服务提供方provider-hello的原始响应只有response-tag字段，经过网关时被塞入了gateway-response-tag字段，最终浏览器收到的响应就是response-tag和gateway-response-tag两个字段：
 
 ![2](./images/SpringCloud_Gateway_ResAndResp/2.jpeg)
 
@@ -19,7 +19,7 @@
 1. 准备工作，在服务提供者的代码中新增一个web接口，用于验证 Gateway 的操作是否有效
 2. 介绍修改请求body和响应body的套路
 3. 按套路开发一个过滤器（Filter），用于修改请求的body
-4. 按套路开发一个过滤器（Filter），用于修改相应的body
+4. 按套路开发一个过滤器（Filter），用于修改响应的body
 5. 思考和尝试：如何从Gateway返回错误？
 
 在实战过程中，顺便搞清楚两个问题：
@@ -43,7 +43,7 @@
 
 ### 准备工作
 
-* 为了观察Gateway能否按照预期去修改请求和相应的body，需要给服务提供者 provider-hello 增加一个接口，代码在 Hello.java 中，如下：
+* 为了观察Gateway能否按照预期去修改请求和响应的body，需要给服务提供者 provider-hello 增加一个接口，代码在 Hello.java 中，如下：
 
   ```java
   @PostMaping("/change")
