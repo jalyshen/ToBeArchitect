@@ -2,6 +2,8 @@
 
 原文：https://www.toutiao.com/a7007230915286123044/
 
+关于负载因子的部分： https://www.jianshu.com/p/effb601f2c48
+
 
 
 ## 一、HashMap构造器
@@ -11,6 +13,63 @@ HashMap 总共提供了三个构造器来创建 HashMap 对象。
 ### 1.1 无参构造器
 
 无参构造函数 *public HashMap() {}* 创建的 HashMap 对象的默认容量为 ***16***，默认的负载因子为 ***0.75***。
+
+#### 1.1.1 什么是负载因子（Load Factor）
+
+第一次创建HashMap的时候，就会指定其容量（如果微明确指定，默认是16），随着不断的向HashMap中put元素的时候，就有可能会超过其容量，那就需要一个扩容机制。
+
+所谓扩容机制，就睡扩大HashMap容量的规则。
+
+```java
+void addEntry(int hash , K key, V value, int bucketIndex) {
+    if ((size >= treshold) && (null != table[bucketIndex])) {
+        resize(2 * table.length);
+        hash = (null != key) ? hash(key) : 0;
+        bucketIndex = indexFor(hash,k table.length);
+    }
+    createEntry(hash, key, value, bucketIndex);
+}
+```
+
+ 从上面代码可以看到，在向 HashMap 中添加元素的过程中，如果元素个数（size）超过临界值（threshold）的时候，就会进行自动扩容（resize），并且在扩容之后，还需要对Hashmap中原有元素进行rehash，即将原来桶中的元素重新分配到新的桶中。
+
+在 HashMap 中，**临界值（threshold） = 负载因子（loadFactor） * 容量（Capacity）**
+
+l**oadFactor是装载因子，表示 HashMap 满的程度**，默认值是0.75f，也就是说默认情况下，当HashMap中元素个数达到了容量大的3/4的时候就会进行自动扩容。
+
+#### 1.1.2 为什么默认 loadFactor 是 0.75
+
+为了避免哈希碰撞，HashMap需要在合适的时候进行扩容。那就是当其中的元素个数达到临界值的时候，而这个临界值与loadFactor有关。换句话说，**设置一个合理的 loadFactor，可以有效的避免哈希冲突**。 - 根本目的
+
+那么，到底 loadFactor 多少算合适呢？ JDK源码中的值是 9.75。
+
+为什么选择0.75呢？背后有什么思考？为什么不是1，不是0.8，或者其他值？
+
+JDK给出的解释如下：
+
+> As a general rule, the default load factor (.75) offers a good tradeoff between time and space costs. Higher values decreased the space overhead increasee the lookup cost (reflected in most of the operations of the HashMap class, including get and put)
+
+大概意思是：**一般来说，默认的负载因子 (0.75) 在时间和空间成本之间提供了很好的权衡。更高的值减少了空间开销，但增加了查找成本(反映在 HashMap 类的大多数操作中，包括 get 和 put)。**
+
+试想一下，如果把负载因子设置成 1，容量使用默认初始值 16，表示一个 HashMap 需要在 "满了" 之后才会进行扩容。
+
+那么在 HashMap 中，最好的情况是这 16 个元素通过 hash 算法之后分别落到了 16 个不同的桶中，否则就必然发生哈希碰撞。而且随着元素越多，哈希碰撞的概率越大，查找速度也会越低。
+
+#### 1.1.3 loadFactor=0.75的数学依据和必然性
+
+**理论上，认为负载因子不能太大，不然会导致大量的哈希冲突，也不能太小，那样会 浪费空间**。
+
+通过一个数学推理 $\frac{log(2)}{log(\frac{s}{s-1})}$ ，当 s 趋于无穷大时，如果增加的键的数量是 P(0) = 0.5，那么 n/s 很快趋近于 log(2)，测算出这个数值在 log(2) （即0.7左右）时是比较合理的。
+
+当然，数学计算方法并不是在Java的官方文档中体现的。
+
+那么，为什么最终选定了 0.75 呢？
+
+前面提到： **临界值（threshold） = 负载因子（loadFactor） * 容量（Capacity）**
+
+根据 HashMap 的扩容机制，它会保证 capacity 的值永远都是 2的 幂，那么为了保证**负载因子（loadFactor） * 容量（Capacity）**的结果是一个整数，这个值是 0.75比较合理，因为这个数和任何2的幂乘积的结果都是整数。
+
+
 
 ### 1.2 有二个参构造器
 

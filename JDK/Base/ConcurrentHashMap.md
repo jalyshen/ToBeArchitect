@@ -4,7 +4,7 @@
 
 
 
-谈到 ConcurrentHashMap，就一定会想到 HashMap。HashMap 在代码中使用频率更高，不需要考虑线程安全的地方，一般都会使用 HashMap。HashMap 的实现非常经典，如果大家读过 HashMap 的源代码，那么对 ConcurrentHashMap 源代码的理解会相对轻松，因为两者采用的数据结构是类似的。
+谈到 ConcurrentHashMap，就一定会想到 HashMap。HashMap 在代码中使用频率更高，不需要考虑线程安全的地方，一般都会使用 HashMap （*Hashtable是线程安全的*）。HashMap 的实现非常经典，如果大家读过 HashMap 的源代码，那么对 ConcurrentHashMap 源代码的理解会相对轻松，因为两者采用的数据结构是类似的。
 
 ## 一. 基本结构
 
@@ -29,7 +29,7 @@ ConcurrentHashMap 是一个存储 Kev/Value 对的容器，并且是线程安全
 
 #### 1.1.2 不同
 
-* 红黑树结构略有不同。HashMap 的红黑树中的节点叫做 ***TreeNode***，TreeNode 不仅仅有属性，还维护着红黑树的结构，比如查找、新增等等；**ConcurrentHashMap 中红黑树被拆分成两块，**TreeNode 仅仅维护着属性和查找功能，新增了 TreeBin，来维护红黑树结构，并负责根节点的加锁和解锁
+* 红黑树结构略有不同。HashMap 的红黑树中的节点叫做 ***TreeNode***，TreeNode 不仅仅有属性，还维护着红黑树的结构，比如查找、新增等等；**ConcurrentHashMap 中红黑树被拆分成两块，**TreeNode 仅仅维护着属性和查找功能，**新增了 TreeBin**，来维护红黑树结构，并负责根节点的加锁和解锁
 * ConcurrentHashMap 新增 ForwardingNode （转移）节点，扩容的时候会使用到，通过使用该节点，来保证扩容时的线程安全
 
 ## 二. 基本构成
@@ -239,7 +239,7 @@ ConcurrentHashMap 在 put 方法上的整体思路和 HashMap 相同，但在线
 
 ### 4.1 spread 方法源码分析
 
-hash 算法的逻辑，决定 ConcurrentHashMap 保存和读取速度。
+hash 算法的逻辑，决定 ConcurrentHashMap 保存和读取速度。 
 
 ```java
 static final int spread(int h) {
