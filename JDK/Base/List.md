@@ -69,7 +69,18 @@ ArrayList 通过两个方法 readObject、writeObject 自定义序列化和反�
 
 * 在用迭代器遍历一个集合对象时，如果线程A遍历过程中，线程B对集合对象的内容进行了修改（增加、删除、修改），则会抛出 ConcurrentModificationException
 * 原理：迭代器在遍历时直接访问集合中的内容，并且在遍历过程中使用了一个 modCount 变量。集合在被遍历期间如果内容发生了变化，就会改变 modCount 的值。每当迭代器使用 hasNext() / next() 遍历下一个元素之前，都会检测 modCount 变量是否为 expectedmodCount 值，是的话就返回遍历；否则抛出异常，终止遍历；
-* 注意：这里异常的抛出条件时检测到 modCount != expectedmodCount 这个条件。如果集合发生变化时修改 modCount 值刚好又设置为了 exceptedmodCount 值，则异常不会抛出。因此，
+* 注意：这里异常的抛出条件时检测到 modCount != expectedmodCount 这个条件。如果集合发生变化时修改 modCount 值刚好又设置为了 exceptedmodCount 值，则异常不会抛出。因此，不能依赖于这个异常是否抛出而进行并发操作的编程，这个异常只是建议用于检查并发修改的bug。
+* 场景：java.util包下的集合类都是快速失败的，不能在多线程下发生并发修改（迭代过程中被修改），比如ArrayList类。
 
 #### 4.2 安全失败（fail-safe）
 
+* 采用安全失败机制的集合容器，在遍历时不是直接在集合内容上访问的，而是先复制原有集合内容，在拷贝的集合上进行遍历的
+* 原理：由于迭代时是对原集合的拷贝进行遍历，所以在遍历过程中对原集合所作的修改并不能被迭代器检测到，所以不会触发ConcurrentModificationException
+* 缺点：基于拷贝内容的优点是避免了ConcurrentModificationException，但同样的，迭代器并不能访问到修改后的内容，即：迭代器遍历的是开始遍历那一刻拿到的集合拷贝，在遍历期间原集合发生的修改迭代器是不知道的
+* 场景：java.uitl.concurrent包下的容器都是安全失败，可以在多线程下并发使用，并发修改，比如CopyOnWriteArrayList 类
+
+
+
+### 有几种实现 ArrayList 线程安全的方法
+
+fail-fast 是一种可能触发的机制，实际上，ArrayList 的线程安全仍然没有保证，一般，保证 ArrayList 的线程安全可以通过下面这些方案：
