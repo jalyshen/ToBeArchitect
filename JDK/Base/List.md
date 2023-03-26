@@ -84,3 +84,21 @@ ArrayList 通过两个方法 readObject、writeObject 自定义序列化和反�
 ### 有几种实现 ArrayList 线程安全的方法
 
 fail-fast 是一种可能触发的机制，实际上，ArrayList 的线程安全仍然没有保证，一般，保证 ArrayList 的线程安全可以通过下面这些方案：
+
+* 用 Vector 替代 ArrayList （不推荐，Vector是一个历史遗留类）
+* 使用 Collections.synchronizedList 包装 ArrayList，然后操作包装后的 List
+* 使用 CopyOnWriteArrayList 替代 ArrayList
+* 在使用 ArrayList 时，应用程序通过同步机制去控制 ArrayList 的读写
+
+
+
+### CopyOnWriteArrayList
+
+CopyOnWriteArrayList 就是线程安全版本的 ArrayList。
+
+它的名字叫做 CopyOnWrite -- 写时复制，已经表明了它的原理。
+
+CopyOnWriteArrayList 采用了一种读写分离的并发策略。CopyOnWriteArrayList 容器允许并发读，读操作是无锁的，性能较高。至于写操作，比如向容器添加一个元素，则首先将当前容器复制一份，然后在新副本上执行写操作，结束之后再将原容器的引用指向新容器。
+
+![6](.\images\List\6.png)
+
