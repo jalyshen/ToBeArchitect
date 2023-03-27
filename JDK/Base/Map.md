@@ -54,3 +54,35 @@ JDK 8 的数据结构是： **数组 + 链表 + 红黑树**
 3. 当前节点核Key匹配，直接返回
 4. 否则，当前节点是否为树节点，查找红黑树
 5. 否则，遍历链表查找
+
+### 3. HashMap的哈希/扰动函数是如何设计的
+
+HashMap的哈希函数是先拿到 Key 的hashcode，是一个 32 位的 int 类型的数值，然后让 hashcode 的高16位和低16位进行异或操作：
+
+```java
+static final int hash(Object key) {
+    int h;
+    // key 的 hashCode 和 key 的 hashCode 右移 16位做异或运算
+    return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+}
+```
+
+这么设计，是为了降低哈希碰撞的概率。
+
+### 4. 哈希/扰动函数是如何设计的
+
+因为 key.hashCode() 函数调用的是 Key 键值类型自带的哈希函数，返回 int 型散列值。int 值范围为 -2147483648 ~ 2147483647，加起来大概40亿的映射空间。
+
+只要哈希函数映射得比较均匀松散，一般应用是很难出现碰撞的。但是问题是一个 40亿长度的数组，内存是放不下的。
+
+假如 HashMap 数组的初始大小才 16，就需要用之前需要对数组的长度取模运算，得到的余数才能用来访问数组下标。
+
+源码中模运算就是把散列值和数组长度 -1 做一个 与“&”操作，位运算比取余 % 运算更快：
+
+```java
+bucketIndex = indexFor(hash, table.length);
+static int indexFor(int h, int length) {
+    return h & (length - 1);
+}
+```
+
