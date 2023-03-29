@@ -42,7 +42,7 @@ CPU 资源也是一直在被消耗的，这会对性能产生很大的影响。�
 
 ### 什么是 AQS？
 
-AQS，AbstractQueuedSynchronizer ，抽象同步队列。它是实现同步器的基础组件，并发包中锁的底层就是使用 AQS 实现的。AQS 定义了一套多线程访问共享资源的同步框架，学多同步类的实现都依赖于它。例如，常用的 Synchronized、ReentrantLock、ReentrantReadWriteLock、Semaphore、CountDownLatch 等。该框架下的锁会先尝试以 CAS 乐观锁去获取锁，如果获取不到，则会转为悲观锁（如 ReentrantLock）
+AQS，AbstractQueuedSynchronizer ，抽象同步队列。它是实现同步器的基础组件，并发包中锁的底层就是使用 AQS 实现的。AQS 定义了一套多线程访问共享资源的同步框架，很多同步类的实现都依赖于它。例如，常用的 Synchronized、ReentrantLock、ReentrantReadWriteLock、Semaphore、CountDownLatch 等。该框架下的锁会先尝试以 CAS 乐观锁去获取锁，如果获取不到，则会转为悲观锁（如 ReentrantLock）
 
 
 
